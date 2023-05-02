@@ -1,0 +1,9 @@
+flows:
+  - id: flow-1
+    source:
+      id: source-1
+      type: http
+    sinks:
+      - id: sink-1
+        type: http
+        url: https://example.com/sink

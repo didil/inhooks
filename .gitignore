@@ -67,3 +67,4 @@ Temporary Items
 # Project specific
 
 bin/
+/inhooks.yml

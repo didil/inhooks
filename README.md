@@ -4,6 +4,20 @@
 
 
 
+Example inhooks.yml config
+``` yaml
+flows:
+  - id: flow-1
+    source:
+      id: source-1
+      type: http
+    sinks:
+      - id: sink-1
+        type: http
+        url: https://example.com/sink
+```
+
+
 ## License
 
 Copyright (c) 2023 Adil H.
