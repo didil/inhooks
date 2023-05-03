@@ -21,7 +21,7 @@ flows:
 
 ## Development setup
 ### Tools
-Install Go 1.20+ and Redis 7.0+
+Install Go 1.20+ and Redis 6.2.6+
 
 
 Install tools
