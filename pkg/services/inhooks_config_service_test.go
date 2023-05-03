@@ -9,14 +9,16 @@ import (
 
 func TestInhooksConfigService_Load_OK(t *testing.T) {
 	s := NewInhooksConfigService()
-	err := s.Load("../testdata/inhooks.yml")
+	err := s.Load("../testdata/inhooksconfig/simple.yml")
 	assert.NoError(t, err)
 
-	flow := s.GetFlow("flow-1")
+	flow := s.FindFlowForSource("source-1-slug")
+	assert.NotNil(t, flow)
 
 	assert.Equal(t, "flow-1", flow.ID)
 	expectedSource := &models.Source{
 		ID:   "source-1",
+		Slug: "source-1-slug",
 		Type: "http",
 	}
 	assert.Equal(t, expectedSource, flow.Source)
@@ -31,12 +33,12 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 	}
 	assert.Equal(t, expectedSink, sink)
 
-	inexistentFlow := s.GetFlow("flow-2")
+	inexistentFlow := s.FindFlowForSource("flow-2")
 	assert.Nil(t, inexistentFlow)
 }
 
 func TestInhooksConfigService_Load_DupFlow(t *testing.T) {
 	s := NewInhooksConfigService()
-	err := s.Load("../testdata/inhooks-dup-flow.yml")
-	assert.ErrorContains(t, err, "flow id flow-1 is duplicated")
+	err := s.Load("../testdata/inhooksconfig/dup-flow.yml")
+	assert.ErrorContains(t, err, "validation err: flow ids must be unique. duplicate flow id: flow-1")
 }

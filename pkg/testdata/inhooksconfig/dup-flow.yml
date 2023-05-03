@@ -2,6 +2,7 @@ flows:
   - id: flow-1
     source:
       id: source-1
+      slug: source-1-slug
       type: http
     sinks:
       - id: sink-1
@@ -10,6 +11,7 @@ flows:
   - id: flow-1
     source:
       id: source-2
+      slug: source-2-slug
       type: http
     sinks:
       - id: sink-2

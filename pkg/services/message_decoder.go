@@ -9,7 +9,7 @@ import (
 )
 
 type MessageDecoder interface {
-	FromHttp(flowID string, r *http.Request) (*models.Message, error)
+	FromHttp(flow *models.Flow, r *http.Request) (*models.Message, error)
 }
 
 type messageDecoder struct {
@@ -19,10 +19,10 @@ func NewMessageDecoder() MessageDecoder {
 	return &messageDecoder{}
 }
 
-func (d *messageDecoder) FromHttp(flowID string, r *http.Request) (*models.Message, error) {
+func (d *messageDecoder) FromHttp(flow *models.Flow, r *http.Request) (*models.Message, error) {
 	m := &models.Message{}
 
-	m.FlowID = flowID
+	m.FlowID = flow.ID
 	m.ID = uuid.New().String()
 	m.HttpHeaders = r.Header
 

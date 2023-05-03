@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/didil/inhooks/pkg/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,8 +23,12 @@ func TestMessageDecoderFromHttp_OK(t *testing.T) {
 		"header-2": []string{"def"},
 	}
 
+	flow := &models.Flow{
+		ID: flowID,
+	}
+
 	d := NewMessageDecoder()
-	message, err := d.FromHttp(flowID, r)
+	message, err := d.FromHttp(flow, r)
 	assert.NoError(t, err)
 
 	_, err = uuid.Parse(message.ID)

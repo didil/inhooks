@@ -11,7 +11,7 @@ func NewRouter(app *handlers.App) *chi.Mux {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/ingest/{flowID}", app.HandleIngest)
+		r.Post("/ingest/{sourceSlug}", app.HandleIngest)
 	})
 
 	return r

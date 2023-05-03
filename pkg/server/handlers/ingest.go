@@ -12,21 +12,21 @@ import (
 func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	reqID := middleware.GetReqID(ctx)
-	flowID := chi.URLParam(r, "flowID")
-	logger := app.logger.With(zap.String("reqID", reqID), zap.String("flowID", flowID))
+	sourceSlug := chi.URLParam(r, "sourceSlug")
+	logger := app.logger.With(zap.String("reqID", reqID), zap.String("sourceSlug", sourceSlug))
 
 	logger.Info("new ingest request")
 
 	// find the flow
-	flow := app.inhooksConfigSvc.GetFlow(flowID)
+	flow := app.inhooksConfigSvc.FindFlowForSource(sourceSlug)
 	if flow == nil {
-		logger.Error("ingest request failed: unknown flow", zap.String("flowID", flowID))
-		app.WriteJSONErr(w, http.StatusNotFound, reqID, fmt.Errorf("unknown flow %s", flowID))
+		logger.Error("ingest request failed: unknown source slug", zap.String("sourceSlug", sourceSlug))
+		app.WriteJSONErr(w, http.StatusNotFound, reqID, fmt.Errorf("unknown source slug %s", sourceSlug))
 		return
 	}
 
 	// decode message
-	_, err := app.messageDecoder.FromHttp(flowID, r)
+	_, err := app.messageDecoder.FromHttp(flow, r)
 	if err != nil {
 		logger.Error("ingest request failed: unable to decode message", zap.Error(err))
 		app.WriteJSONErr(w, http.StatusBadRequest, reqID, fmt.Errorf("unable to read data"))

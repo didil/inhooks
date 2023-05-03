@@ -11,12 +11,12 @@ import (
 
 type InhooksConfigService interface {
 	Load(path string) error
-	GetFlow(id string) *models.Flow
+	FindFlowForSource(sourceSlug string) *models.Flow
 }
 
 type inhooksConfigService struct {
-	inhooksConfig *models.InhooksConfig
-	flows         map[string]*models.Flow
+	inhooksConfig     *models.InhooksConfig
+	flowsBySourceSlug map[string]*models.Flow
 }
 
 func NewInhooksConfigService() InhooksConfigService {
@@ -38,7 +38,12 @@ func (s *inhooksConfigService) Load(filepath string) error {
 
 	s.inhooksConfig = inhooksConfig
 
-	s.flows, err = s.buildFlowsMap()
+	err = models.ValidateInhooksConfig(inhooksConfig)
+	if err != nil {
+		return errors.Wrapf(err, "validation err")
+	}
+
+	s.flowsBySourceSlug, err = s.buildFlowsMap()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build flows map")
 	}
@@ -46,8 +51,8 @@ func (s *inhooksConfigService) Load(filepath string) error {
 	return nil
 }
 
-func (s *inhooksConfigService) GetFlow(id string) *models.Flow {
-	return s.flows[id]
+func (s *inhooksConfigService) FindFlowForSource(sourceSlug string) *models.Flow {
+	return s.flowsBySourceSlug[sourceSlug]
 }
 
 func (s *inhooksConfigService) buildFlowsMap() (map[string]*models.Flow, error) {
@@ -55,13 +60,16 @@ func (s *inhooksConfigService) buildFlowsMap() (map[string]*models.Flow, error) 
 	flowsArr := s.inhooksConfig.Flows
 
 	for _, f := range flowsArr {
-		_, ok := flowsMap[f.ID]
+		if f.Source == nil {
+			return nil, fmt.Errorf("source is empty")
+		}
+		_, ok := flowsMap[f.Source.Slug]
 		if ok {
 			// flow id is duplicated
-			return nil, fmt.Errorf("flow id %s is duplicated", f.ID)
+			return nil, fmt.Errorf("flow source slug %s is duplicated", f.Source.Slug)
 		}
 
-		flowsMap[f.ID] = f
+		flowsMap[f.Source.Slug] = f
 	}
 
 	return flowsMap, nil
