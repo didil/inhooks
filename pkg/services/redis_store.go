@@ -18,10 +18,14 @@ type redisStore struct {
 	inhooksDBName string
 }
 
-func NewRedisStore(client *redis.Client, redisPrefixInhooksDBName string) (RedisStore, error) {
+func NewRedisStore(client *redis.Client, inhooksDBName string) (RedisStore, error) {
+	if inhooksDBName == "" {
+		return nil, fmt.Errorf("env var REDIS_INHOOKS_DB_NAME not set")
+	}
+
 	st := &redisStore{
 		client:        client,
-		inhooksDBName: redisPrefixInhooksDBName,
+		inhooksDBName: inhooksDBName,
 	}
 
 	return st, nil

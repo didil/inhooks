@@ -37,7 +37,7 @@ func (s *RedisStoreSuite) SetupTest() {
 
 	s.client = client
 
-	redisStore, err := NewRedisStore(client, appConf.Redis.PrefixInhooksDBName)
+	redisStore, err := NewRedisStore(client, appConf.Redis.InhooksDBName)
 	s.NoError(err)
 
 	s.redisStore = redisStore
@@ -45,7 +45,7 @@ func (s *RedisStoreSuite) SetupTest() {
 
 func (s *RedisStoreSuite) TestEnqueue_Dequeue() {
 	ctx := context.Background()
-	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.PrefixInhooksDBName)
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
 	defer func() {
 		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
 		s.NoError(err)

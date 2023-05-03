@@ -18,8 +18,8 @@ type Server struct {
 }
 
 type Redis struct {
-	URL                 string `env:"REDIS_URL,default=redis://localhost:6379"`
-	PrefixInhooksDBName string `env:"REDIS_PREFIX_INHOOKS_DB_NAME,default=default"`
+	URL           string `env:"REDIS_URL,default=redis://localhost:6379"`
+	InhooksDBName string `env:"REDIS_INHOOKS_DB_NAME"`
 }
 
 func ProcessAppConfig(ctx context.Context) (*AppConfig, error) {
