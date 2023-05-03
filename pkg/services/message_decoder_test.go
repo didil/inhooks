@@ -16,7 +16,8 @@ func TestMessageDecoderFromHttp_OK(t *testing.T) {
 	flowID := "flow-1"
 	jsonPayload := []byte(`{"id":"1234","status":"complete"}`)
 	b := bytes.NewBuffer(jsonPayload)
-	r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/ingest/%s", flowID), b)
+	rawQuery := "x=abc&yz=this%20is%20ok"
+	r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/ingest/%s?%s", flowID, rawQuery), b)
 
 	r.Header = http.Header{
 		"header-1": []string{"abc"},
@@ -35,8 +36,7 @@ func TestMessageDecoderFromHttp_OK(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, flowID, message.FlowID)
-
+	assert.Equal(t, rawQuery, message.RawQuery)
 	assert.Equal(t, r.Header, message.HttpHeaders)
-
 	assert.Equal(t, jsonPayload, message.Payload)
 }

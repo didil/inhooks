@@ -21,4 +21,4 @@ run-dev:
 
 .PHONY: gen-mocks
 gen-mocks:
-	mock/gen_mocks.sh
+	pkg/testsupport/mocks/gen_mocks.sh

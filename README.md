@@ -3,6 +3,7 @@
 # Inhooks
 
 
+## Inhooks config
 
 Example inhooks.yml config
 ``` yaml
@@ -18,7 +19,22 @@ flows:
         url: https://example.com/sink
 ```
 
+## Development setup
+### Tools
+Install Go 1.20+ and Redis 7.0+
 
+
+Install tools
+```shell
+make install-tools
+```
+
+### Env
+Copy the .env examples to init your .env files
+```shell
+cp .env.example .env
+cp .env.test.example .env.test
+```
 ## License
 
 Copyright (c) 2023 Adil H.

@@ -68,3 +68,5 @@ Temporary Items
 
 bin/
 /inhooks.yml
+.env
+.env.test

@@ -12,11 +12,13 @@ import (
 type InhooksConfigService interface {
 	Load(path string) error
 	FindFlowForSource(sourceSlug string) *models.Flow
+	GetFlow(flowID string) *models.Flow
 }
 
 type inhooksConfigService struct {
 	inhooksConfig     *models.InhooksConfig
 	flowsBySourceSlug map[string]*models.Flow
+	flowsByID         map[string]*models.Flow
 }
 
 func NewInhooksConfigService() InhooksConfigService {
@@ -43,7 +45,7 @@ func (s *inhooksConfigService) Load(filepath string) error {
 		return errors.Wrapf(err, "validation err")
 	}
 
-	s.flowsBySourceSlug, err = s.buildFlowsMap()
+	err = s.initFlowsMaps()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build flows map")
 	}
@@ -55,22 +57,33 @@ func (s *inhooksConfigService) FindFlowForSource(sourceSlug string) *models.Flow
 	return s.flowsBySourceSlug[sourceSlug]
 }
 
-func (s *inhooksConfigService) buildFlowsMap() (map[string]*models.Flow, error) {
-	flowsMap := map[string]*models.Flow{}
+func (s *inhooksConfigService) GetFlow(flowID string) *models.Flow {
+	return s.flowsByID[flowID]
+}
+
+func (s *inhooksConfigService) initFlowsMaps() error {
+	s.flowsBySourceSlug = map[string]*models.Flow{}
+	s.flowsByID = map[string]*models.Flow{}
 	flowsArr := s.inhooksConfig.Flows
 
 	for _, f := range flowsArr {
 		if f.Source == nil {
-			return nil, fmt.Errorf("source is empty")
+			return fmt.Errorf("source is empty")
 		}
-		_, ok := flowsMap[f.Source.Slug]
+		_, ok := s.flowsBySourceSlug[f.Source.Slug]
+		if ok {
+			// flow source slug is duplicated
+			return fmt.Errorf("flow source slug %s is duplicated", f.Source.Slug)
+		}
+		s.flowsBySourceSlug[f.Source.Slug] = f
+
+		_, ok = s.flowsByID[f.ID]
 		if ok {
 			// flow id is duplicated
-			return nil, fmt.Errorf("flow source slug %s is duplicated", f.Source.Slug)
+			return fmt.Errorf("flow id %s is duplicated", f.ID)
 		}
-
-		flowsMap[f.Source.Slug] = f
+		s.flowsByID[f.ID] = f
 	}
 
-	return flowsMap, nil
+	return nil
 }

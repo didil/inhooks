@@ -26,6 +26,8 @@ func (d *messageDecoder) FromHttp(flow *models.Flow, r *http.Request) (*models.M
 	m.ID = uuid.New().String()
 	m.HttpHeaders = r.Header
 
+	m.RawQuery = r.URL.RawQuery
+
 	var err error
 	m.Payload, err = io.ReadAll(r.Body)
 	if err != nil {

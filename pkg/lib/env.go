@@ -14,14 +14,10 @@ const (
 )
 
 func LoadEnv() error {
-	return loadEnv(".env")
+	return LoadEnvFromFile(".env")
 }
 
-func LoadTestEnv() error {
-	return loadEnv(".env.test")
-}
-
-func loadEnv(filename string) error {
+func LoadEnvFromFile(filename string) error {
 	err := godotenv.Load(filename)
 	if err != nil {
 		return errors.Wrapf(err, "error loading %s file", filename)

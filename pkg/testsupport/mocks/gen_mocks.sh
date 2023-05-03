@@ -1,0 +1,1 @@
+ bin/mockgen -source pkg/services/redis_store.go -destination pkg/testsupport/mocks/mock_redis_store.go -package mocks
