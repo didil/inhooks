@@ -23,11 +23,9 @@ func TestRedisStoreSuite(t *testing.T) {
 }
 
 func (s *RedisStoreSuite) SetupTest() {
-	err := lib.LoadEnvFromFile("../../.env.test")
-	s.NoError(err)
-
 	ctx := context.Background()
-	appConf, err := lib.ProcessAppConfig(ctx)
+
+	appConf, err := testsupport.InitAppConfig(ctx)
 	s.NoError(err)
 
 	s.appConf = appConf

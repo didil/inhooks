@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"os"
+
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 )
@@ -14,13 +16,18 @@ const (
 )
 
 func LoadEnv() error {
-	return LoadEnvFromFile(".env")
+	return LoadEnvFromFile(".env", true)
 }
 
-func LoadEnvFromFile(filename string) error {
+func LoadEnvFromFile(filename string, skipIfNotExists bool) error {
 	err := godotenv.Load(filename)
 	if err != nil {
-		return errors.Wrapf(err, "error loading %s file", filename)
+		if errors.Is(err, os.ErrNotExist) && skipIfNotExists {
+			// file does not exist
+			return nil
+		}
+
+		return errors.Wrapf(err, "error processing dotenv config. file: %s", filename)
 	}
 
 	return nil
