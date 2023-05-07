@@ -61,9 +61,7 @@ func main() {
 	)
 
 	r := server.NewRouter(app)
-
 	addr := fmt.Sprintf("%s:%d", appConf.Server.Host, appConf.Server.Port)
-
 	logger.Info("listening ...", zap.String("addr", addr))
 	err = http.ListenAndServe(addr, r)
 	if err != nil {

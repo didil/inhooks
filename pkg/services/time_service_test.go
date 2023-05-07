@@ -10,9 +10,11 @@ import (
 func TestTimeService(t *testing.T) {
 	s := NewTimeService()
 
+	n := time.Now()
+
 	now := s.Now()
 
 	// check now is relatively accurate
-	assert.GreaterOrEqual(t, now, time.Now())
-	assert.Less(t, now, time.Now().Add(500*time.Millisecond))
+	assert.GreaterOrEqual(t, now, n)
+	assert.Less(t, now, n.Add(100*time.Millisecond))
 }

@@ -33,5 +33,4 @@ jobs:
           HOST: localhost
           PORT: 3001
           REDIS_URL: "redis://localhost:6379"
-
         run: GOFLAGS=-v make test
