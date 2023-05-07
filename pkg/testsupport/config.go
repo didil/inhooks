@@ -7,7 +7,7 @@ import (
 )
 
 func InitAppConfig(ctx context.Context) (*lib.AppConfig, error) {
-	err := lib.LoadEnvFromFile("../../.env.test", false)
+	err := lib.LoadEnvFromFile("../../.env.test")
 	if err != nil {
 		return nil, err
 	}

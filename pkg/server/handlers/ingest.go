@@ -25,15 +25,21 @@ func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// decode message
-	_, err := app.messageDecoder.FromHttp(flow, r)
+	// build messages
+	messages, err := app.messageBuilder.FromHttp(flow, r)
 	if err != nil {
-		logger.Error("ingest request failed: unable to decode message", zap.Error(err))
+		logger.Error("ingest request failed: unable to build messages", zap.Error(err))
 		app.WriteJSONErr(w, http.StatusBadRequest, reqID, fmt.Errorf("unable to read data"))
 		return
 	}
 
-	// TODO: enqueue message
+	// enqueue messages
+	err = app.messageEnqueuer.Enqueue(ctx, messages)
+	if err != nil {
+		logger.Error("ingest request failed: unable to enqueue messages", zap.Error(err))
+		app.WriteJSONErr(w, http.StatusBadRequest, reqID, fmt.Errorf("unable to enqueue data"))
+		return
+	}
 
 	app.WriteJSONResponse(w, http.StatusOK, JSONOK{})
 	logger.Info("ingest request succeeded")

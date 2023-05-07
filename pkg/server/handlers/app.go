@@ -13,7 +13,8 @@ type App struct {
 	logger           *zap.Logger
 	appConf          *lib.AppConfig
 	inhooksConfigSvc services.InhooksConfigService
-	messageDecoder   services.MessageDecoder
+	messageBuilder   services.MessageBuilder
+	messageEnqueuer  services.MessageEnqueuer
 }
 
 type AppOpt func(app *App)
@@ -46,9 +47,15 @@ func WithInhooksConfigService(inhooksConfigSvc services.InhooksConfigService) Ap
 	}
 }
 
-func WithMessageDecoder(messageDecoder services.MessageDecoder) AppOpt {
+func WithMessageBuilder(messageBuilder services.MessageBuilder) AppOpt {
 	return func(app *App) {
-		app.messageDecoder = messageDecoder
+		app.messageBuilder = messageBuilder
+	}
+}
+
+func WithMessageEnqueuer(messageEnqueuer services.MessageEnqueuer) AppOpt {
+	return func(app *App) {
+		app.messageEnqueuer = messageEnqueuer
 	}
 }
 

@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type SinkType string
 
 const (
@@ -11,7 +13,12 @@ var SinkTypes = []SinkType{
 }
 
 type Sink struct {
-	ID   string   `yaml:"id"`
+	// Sink ID
+	ID string `yaml:"id"`
+	// Sink Type
 	Type SinkType `yaml:"type"`
-	URL  string   `yaml:"url"`
+	// Sink Url for HTTP sinks
+	URL string `yaml:"url"`
+	// Deliver after delay
+	Delay time.Duration `yaml:"delay"`
 }

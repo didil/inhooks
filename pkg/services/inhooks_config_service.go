@@ -6,6 +6,7 @@ import (
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,13 +17,16 @@ type InhooksConfigService interface {
 }
 
 type inhooksConfigService struct {
+	logger            *zap.Logger
 	inhooksConfig     *models.InhooksConfig
 	flowsBySourceSlug map[string]*models.Flow
 	flowsByID         map[string]*models.Flow
 }
 
-func NewInhooksConfigService() InhooksConfigService {
-	return &inhooksConfigService{}
+func NewInhooksConfigService(logger *zap.Logger) InhooksConfigService {
+	return &inhooksConfigService{
+		logger: logger,
+	}
 }
 
 func (s *inhooksConfigService) Load(filepath string) error {
@@ -49,6 +53,8 @@ func (s *inhooksConfigService) Load(filepath string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to build flows map")
 	}
+
+	s.log()
 
 	return nil
 }
@@ -86,4 +92,24 @@ func (s *inhooksConfigService) initFlowsMaps() error {
 	}
 
 	return nil
+}
+
+func (s *inhooksConfigService) log() {
+	for _, f := range s.flowsByID {
+		s.logger.Info("loaded flow",
+			zap.String("id", f.ID),
+			zap.String("sourceID", f.Source.ID),
+			zap.String("sourceSlug", f.Source.Slug),
+			zap.String("sourceType", string(f.Source.Type)),
+		)
+
+		for _, sink := range f.Sinks {
+			s.logger.Info("flow sink",
+				zap.String("id", sink.ID),
+				zap.String("type", string(sink.Type)),
+				zap.String("url", string(sink.URL)),
+				zap.Duration("delay", sink.Delay),
+			)
+		}
+	}
 }

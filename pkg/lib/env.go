@@ -16,13 +16,13 @@ const (
 )
 
 func LoadEnv() error {
-	return LoadEnvFromFile(".env", true)
+	return LoadEnvFromFile(".env")
 }
 
-func LoadEnvFromFile(filename string, skipIfNotExists bool) error {
+func LoadEnvFromFile(filename string) error {
 	err := godotenv.Load(filename)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) && skipIfNotExists {
+		if errors.Is(err, os.ErrNotExist) {
 			// file does not exist
 			return nil
 		}

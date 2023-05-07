@@ -2,6 +2,7 @@ package models
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,9 +19,10 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 				},
 				Sinks: []*Sink{
 					{
-						ID:   "sink-1",
-						Type: "http",
-						URL:  "https://example.com/sink",
+						ID:    "sink-1",
+						Type:  "http",
+						URL:   "https://example.com/sink",
+						Delay: 12 * time.Minute,
 					},
 				},
 			},

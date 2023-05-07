@@ -31,26 +31,40 @@ func main() {
 		log.Fatalf("failed to initialize logger: %v", err)
 	}
 
-	inhooksConfigSvc := services.NewInhooksConfigService()
+	inhooksConfigSvc := services.NewInhooksConfigService(logger)
 	err = inhooksConfigSvc.Load("inhooks.yml")
 	if err != nil {
 		logger.Fatal("failed to load inhooks config", zap.Error(err))
 	}
 
-	messageDecoder := services.NewMessageDecoder()
+	timeSvc := services.NewTimeService()
+
+	messageBuilder := services.NewMessageBuilder(timeSvc)
+
+	redisClient, err := lib.InitRedisClient(appConf)
+	if err != nil {
+		logger.Fatal("failed to init redis client", zap.Error(err))
+	}
+	redisStore, err := services.NewRedisStore(redisClient, appConf.Redis.InhooksDBName)
+	if err != nil {
+		logger.Fatal("failed to init redis store", zap.Error(err))
+	}
+
+	messageEnqueuer := services.NewMessageEnqueuer(redisStore, timeSvc)
 
 	app := handlers.NewApp(
 		handlers.WithLogger(logger),
 		handlers.WithAppConfig(appConf),
 		handlers.WithInhooksConfigService(inhooksConfigSvc),
-		handlers.WithMessageDecoder(messageDecoder),
+		handlers.WithMessageBuilder(messageBuilder),
+		handlers.WithMessageEnqueuer(messageEnqueuer),
 	)
 
 	r := server.NewRouter(app)
 
 	addr := fmt.Sprintf("%s:%d", appConf.Server.Host, appConf.Server.Port)
 
-	logger.Info("Listening ...", zap.String("addr", addr))
+	logger.Info("listening ...", zap.String("addr", addr))
 	err = http.ListenAndServe(addr, r)
 	if err != nil {
 		logger.Fatal("listener failure", zap.Error(err))

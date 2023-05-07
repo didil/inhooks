@@ -71,6 +71,10 @@ func ValidateInhooksConfig(c *InhooksConfig) error {
 				return fmt.Errorf("invalid sink type: %s. allowed: %v", source.Type, SinkTypes)
 			}
 
+			if sink.Delay < 0 {
+				return fmt.Errorf("invalid delay : %d. delay must be greater or equal to 0", sink.Delay)
+			}
+
 			if sink.Type == SinkTypeHttp {
 				u, err := url.ParseRequestURI(sink.URL)
 				if err != nil {

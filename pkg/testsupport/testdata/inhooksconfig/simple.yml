@@ -8,3 +8,13 @@ flows:
       - id: sink-1
         type: http
         url: https://example.com/sink
+  - id: flow-2
+    source:
+      id: source-2
+      slug: source-2-slug
+      type: http
+    sinks:
+      - id: sink-2
+        type: http
+        url: https://example.com/sink
+        delay: 15m
