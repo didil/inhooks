@@ -27,4 +27,11 @@ jobs:
         run: make lint
 
       - name: Test
+        env:
+          APP_ENV: test
+          REDIS_INHOOKS_DB_NAME: test
+          HOST: localhost
+          PORT: 3001
+          REDIS_URL: "redis://localhost:6379"
+
         run: GOFLAGS=-v make test
