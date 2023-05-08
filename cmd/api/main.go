@@ -5,23 +5,25 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/didil/inhooks/pkg/lib"
 	"github.com/didil/inhooks/pkg/server"
 	"github.com/didil/inhooks/pkg/server/handlers"
 	"github.com/didil/inhooks/pkg/services"
+	"github.com/didil/inhooks/pkg/supervisor"
 	"go.uber.org/zap"
 )
 
 func main() {
-	ctx := context.Background()
-
 	err := lib.LoadEnv()
 	if err != nil {
 		log.Fatalf("failed to load env: %v", err)
 	}
 
-	appConf, err := lib.ProcessAppConfig(ctx)
+	appConf, err := lib.InitAppConfig(context.Background())
 	if err != nil {
 		log.Fatalf("failed to process config: %v", err)
 	}
@@ -31,7 +33,7 @@ func main() {
 		log.Fatalf("failed to initialize logger: %v", err)
 	}
 
-	inhooksConfigSvc := services.NewInhooksConfigService(logger)
+	inhooksConfigSvc := services.NewInhooksConfigService(logger, appConf)
 	err = inhooksConfigSvc.Load("inhooks.yml")
 	if err != nil {
 		logger.Fatal("failed to load inhooks config", zap.Error(err))
@@ -51,6 +53,7 @@ func main() {
 	}
 
 	messageEnqueuer := services.NewMessageEnqueuer(redisStore, timeSvc)
+	messageFetcher := services.NewMessageFetcher(redisStore, timeSvc)
 
 	app := handlers.NewApp(
 		handlers.WithLogger(logger),
@@ -61,10 +64,51 @@ func main() {
 	)
 
 	r := server.NewRouter(app)
+
 	addr := fmt.Sprintf("%s:%d", appConf.Server.Host, appConf.Server.Port)
-	logger.Info("listening ...", zap.String("addr", addr))
-	err = http.ListenAndServe(addr, r)
+	httpServer := http.Server{
+		Addr:    addr,
+		Handler: r,
+	}
+
+	go func() {
+		logger.Info("listening ...", zap.String("addr", addr))
+		err = httpServer.ListenAndServe()
+		if err != nil {
+			logger.Fatal("listener failure", zap.Error(err))
+		}
+	}()
+
+	httpClient := lib.NewHttpClient(appConf)
+
+	messageProcessor := services.NewMessageProcessor(httpClient)
+	processingResultsService := services.NewProcessingResultsService(timeSvc)
+
+	svisor := supervisor.NewSupervisor(
+		supervisor.WithLogger(logger),
+		supervisor.WithMessageFetcher(messageFetcher),
+		supervisor.WithAppConfig(appConf),
+		supervisor.WithInhooksConfigService(inhooksConfigSvc),
+		supervisor.WithMessageProcessor(messageProcessor),
+		supervisor.WithProcessingResultsService(processingResultsService),
+	)
+
+	go func() {
+		logger.Info("starting supervisor ...")
+		svisor.Start()
+	}()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+
+	<-sigs
+
+	svisor.Shutdown()
+
+	serverShutdownContext, cancel := context.WithTimeout(context.Background(), appConf.Server.ShutdownGracePeriod)
+	defer cancel()
+	err = httpServer.Shutdown(serverShutdownContext)
 	if err != nil {
-		logger.Fatal("listener failure", zap.Error(err))
+		logger.Fatal("http server shutdown failed", zap.Error(err))
 	}
 }

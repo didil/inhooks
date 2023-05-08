@@ -27,15 +27,7 @@ type messageEnqueuer struct {
 
 func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) error {
 	for _, m := range messages {
-		var queueStatus QueueStatus
-
-		if m.DeliverAfter.After(e.timeSvc.Now()) {
-			// schedule in the future
-			queueStatus = QueueStatusScheduled
-		} else {
-			// ready to process
-			queueStatus = QueueStatusReady
-		}
+		queueStatus := getQueueStatus(m, e.timeSvc)
 
 		b, err := json.Marshal(&m)
 		if err != nil {
@@ -50,6 +42,15 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 	return nil
 }
 
+func getQueueStatus(m *models.Message, timeSvc TimeService) QueueStatus {
+	if m.DeliverAfter.After(timeSvc.Now()) {
+		// schedule in the future
+		return QueueStatusScheduled
+	}
+	// ready to process
+	return QueueStatusReady
+}
+
 func queueKey(flowID string, sinkID string, queueStatus QueueStatus) string {
 	return fmt.Sprintf("flow:%s:sink:%s:%s", flowID, sinkID, queueStatus)
 }
@@ -57,6 +58,7 @@ func queueKey(flowID string, sinkID string, queueStatus QueueStatus) string {
 type QueueStatus string
 
 const (
-	QueueStatusScheduled QueueStatus = "scheduled"
-	QueueStatusReady     QueueStatus = "ready"
+	QueueStatusScheduled  QueueStatus = "scheduled"
+	QueueStatusReady      QueueStatus = "ready"
+	QueueStatusProcessing QueueStatus = "processing"
 )

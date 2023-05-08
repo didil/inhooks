@@ -7,6 +7,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -34,19 +35,34 @@ func (m *MockRedisStore) EXPECT() *MockRedisStoreMockRecorder {
 	return m.recorder
 }
 
-// Dequeue mocks base method.
-func (m *MockRedisStore) Dequeue(ctx context.Context, key string) ([]byte, error) {
+// BLMove mocks base method.
+func (m *MockRedisStore) BLMove(ctx context.Context, timeout time.Duration, sourceQueueKey, destQueueKey string) ([]byte, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Dequeue", ctx, key)
+	ret := m.ctrl.Call(m, "BLMove", ctx, timeout, sourceQueueKey, destQueueKey)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BLMove indicates an expected call of BLMove.
+func (mr *MockRedisStoreMockRecorder) BLMove(ctx, timeout, sourceQueueKey, destQueueKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BLMove", reflect.TypeOf((*MockRedisStore)(nil).BLMove), ctx, timeout, sourceQueueKey, destQueueKey)
+}
+
+// Dequeue mocks base method.
+func (m *MockRedisStore) Dequeue(ctx context.Context, timeout time.Duration, key string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Dequeue", ctx, timeout, key)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Dequeue indicates an expected call of Dequeue.
-func (mr *MockRedisStoreMockRecorder) Dequeue(ctx, key interface{}) *gomock.Call {
+func (mr *MockRedisStoreMockRecorder) Dequeue(ctx, timeout, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dequeue", reflect.TypeOf((*MockRedisStore)(nil).Dequeue), ctx, key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Dequeue", reflect.TypeOf((*MockRedisStore)(nil).Dequeue), ctx, timeout, key)
 }
 
 // Enqueue mocks base method.

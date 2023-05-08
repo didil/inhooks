@@ -12,7 +12,7 @@ func InitAppConfig(ctx context.Context) (*lib.AppConfig, error) {
 		return nil, err
 	}
 
-	appConf, err := lib.ProcessAppConfig(ctx)
+	appConf, err := lib.InitAppConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

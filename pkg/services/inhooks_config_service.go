@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/didil/inhooks/pkg/lib"
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -14,18 +15,21 @@ type InhooksConfigService interface {
 	Load(path string) error
 	FindFlowForSource(sourceSlug string) *models.Flow
 	GetFlow(flowID string) *models.Flow
+	GetFlows() map[string]*models.Flow
 }
 
 type inhooksConfigService struct {
 	logger            *zap.Logger
+	appConf           *lib.AppConfig
 	inhooksConfig     *models.InhooksConfig
 	flowsBySourceSlug map[string]*models.Flow
 	flowsByID         map[string]*models.Flow
 }
 
-func NewInhooksConfigService(logger *zap.Logger) InhooksConfigService {
+func NewInhooksConfigService(logger *zap.Logger, appConf *lib.AppConfig) InhooksConfigService {
 	return &inhooksConfigService{
-		logger: logger,
+		logger:  logger,
+		appConf: appConf,
 	}
 }
 
@@ -44,7 +48,9 @@ func (s *inhooksConfigService) Load(filepath string) error {
 
 	s.inhooksConfig = inhooksConfig
 
-	err = models.ValidateInhooksConfig(inhooksConfig)
+	// set defaults
+
+	err = models.ValidateInhooksConfig(s.appConf, inhooksConfig)
 	if err != nil {
 		return errors.Wrapf(err, "validation err")
 	}
@@ -65,6 +71,10 @@ func (s *inhooksConfigService) FindFlowForSource(sourceSlug string) *models.Flow
 
 func (s *inhooksConfigService) GetFlow(flowID string) *models.Flow {
 	return s.flowsByID[flowID]
+}
+
+func (s *inhooksConfigService) GetFlows() map[string]*models.Flow {
+	return s.flowsByID
 }
 
 func (s *inhooksConfigService) initFlowsMaps() error {
@@ -108,7 +118,7 @@ func (s *inhooksConfigService) log() {
 				zap.String("id", sink.ID),
 				zap.String("type", string(sink.Type)),
 				zap.String("url", string(sink.URL)),
-				zap.Duration("delay", sink.Delay),
+				zap.Durationp("delay", sink.Delay),
 			)
 		}
 	}

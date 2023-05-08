@@ -19,6 +19,10 @@ type Sink struct {
 	Type SinkType `yaml:"type"`
 	// Sink Url for HTTP sinks
 	URL string `yaml:"url"`
-	// Deliver after delay
-	Delay time.Duration `yaml:"delay"`
+	// Process after delay
+	Delay *time.Duration `yaml:"delay"`
+	// Retry after x time
+	RetryAfter *time.Duration `yaml:"retryAfter"`
+	// Max attempts
+	MaxAttempts *int `yaml:"maxAttempts"`
 }

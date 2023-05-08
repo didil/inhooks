@@ -18,3 +18,5 @@ flows:
         type: http
         url: https://example.com/sink
         delay: 15m
+        retryAfter: 2m
+        maxAttemps: 3

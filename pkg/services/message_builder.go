@@ -44,7 +44,9 @@ func (b *messageBuilder) FromHttp(flow *models.Flow, r *http.Request) ([]*models
 		m.Payload = payload
 
 		// init processing info
-		m.DeliverAfter = b.timeSvc.Now().Add(s.Delay)
+		if s.Delay != nil {
+			m.DeliverAfter = b.timeSvc.Now().Add(*s.Delay)
+		}
 
 		messages = append(messages, m)
 	}

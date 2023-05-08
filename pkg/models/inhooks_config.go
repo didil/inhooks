@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"regexp"
 
+	"github.com/didil/inhooks/pkg/lib"
 	"golang.org/x/exp/slices"
 )
 
@@ -18,7 +19,8 @@ func idValidationErr(field string) error {
 	return fmt.Errorf("field %s can only contain upper case or lower case letters, digits or hyphens. min length: 1. max length: 255", field)
 }
 
-func ValidateInhooksConfig(c *InhooksConfig) error {
+// ValidateInhooksConfig validates inhooks config and sets defaults
+func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 	if len(c.Flows) == 0 {
 		return fmt.Errorf("no flows defined")
 	}
@@ -71,8 +73,16 @@ func ValidateInhooksConfig(c *InhooksConfig) error {
 				return fmt.Errorf("invalid sink type: %s. allowed: %v", source.Type, SinkTypes)
 			}
 
-			if sink.Delay < 0 {
-				return fmt.Errorf("invalid delay : %d. delay must be greater or equal to 0", sink.Delay)
+			if sink.Delay == nil {
+				sink.Delay = &appConf.Sink.DefaultDelay
+			}
+
+			if sink.MaxAttempts == nil {
+				sink.MaxAttempts = &appConf.Sink.DefaultMaxAttempts
+			}
+
+			if sink.MaxAttempts == nil {
+				sink.MaxAttempts = &appConf.Sink.DefaultMaxAttempts
 			}
 
 			if sink.Type == SinkTypeHttp {

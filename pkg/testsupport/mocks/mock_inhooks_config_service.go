@@ -62,6 +62,20 @@ func (mr *MockInhooksConfigServiceMockRecorder) GetFlow(flowID interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlow", reflect.TypeOf((*MockInhooksConfigService)(nil).GetFlow), flowID)
 }
 
+// GetFlows mocks base method.
+func (m *MockInhooksConfigService) GetFlows() map[string]*models.Flow {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFlows")
+	ret0, _ := ret[0].(map[string]*models.Flow)
+	return ret0
+}
+
+// GetFlows indicates an expected call of GetFlows.
+func (mr *MockInhooksConfigServiceMockRecorder) GetFlows() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlows", reflect.TypeOf((*MockInhooksConfigService)(nil).GetFlows))
+}
+
 // Load mocks base method.
 func (m *MockInhooksConfigService) Load(path string) error {
 	m.ctrl.T.Helper()

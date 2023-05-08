@@ -22,13 +22,14 @@ type Message struct {
 type DeliveryAttempt struct {
 	At     time.Time             `json:"at"`
 	Status DeliveryAttemptStatus `json:"status"`
+	Error  error                 `json:"error"`
 }
 
 type DeliveryAttemptStatus string
 
 const (
-	DeliveryAttemptStatusOK    = "ok"
-	DeliveryAttemptStatusailed = "failed"
+	DeliveryAttemptStatusOK     = "ok"
+	DeliveryAttemptStatusFailed = "failed"
 )
 
 type MessageStatus string

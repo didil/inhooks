@@ -1,18 +1,24 @@
 package services
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/didil/inhooks/pkg/models"
+	"github.com/didil/inhooks/pkg/testsupport"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
 func TestInhooksConfigService_Load_OK(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
 	logger := zap.NewNop()
-	s := NewInhooksConfigService(logger)
-	err := s.Load("../testsupport/testdata/inhooksconfig/simple.yml")
+	s := NewInhooksConfigService(logger, appConf)
+	err = s.Load("../testsupport/testdata/inhooksconfig/simple.yml")
 	assert.NoError(t, err)
 
 	flow1 := s.FindFlowForSource("source-1-slug")
@@ -43,6 +49,9 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 	flow2ById := s.GetFlow("flow-2")
 	assert.Equal(t, flow2, flow2ById)
 
+	delay := 15 * time.Minute
+	retryAfter := 12 * time.Minute
+	maxAttempts := 6
 	assert.Equal(t, &models.Flow{
 		ID: "flow-2",
 		Source: &models.Source{
@@ -52,10 +61,12 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 		},
 		Sinks: []*models.Sink{
 			{
-				ID:    "sink-2",
-				Type:  "http",
-				URL:   "https://example.com/sink",
-				Delay: 15 * time.Minute,
+				ID:          "sink-2",
+				Type:        "http",
+				URL:         "https://example.com/sink",
+				Delay:       &delay,
+				RetryAfter:  &retryAfter,
+				MaxAttempts: &maxAttempts,
 			},
 		},
 	}, flow2)
@@ -65,11 +76,22 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 
 	inexistentFlow = s.GetFlow("flow-3")
 	assert.Nil(t, inexistentFlow)
+
+	flows := s.GetFlows()
+	assert.Equal(t, map[string]*models.Flow{
+		"flow-1": flow1,
+		"flow-2": flow2,
+	}, flows)
+
 }
 
 func TestInhooksConfigService_Load_DupFlow(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
 	logger := zap.NewNop()
-	s := NewInhooksConfigService(logger)
-	err := s.Load("../testsupport/testdata/inhooksconfig/dup-flow.yml")
+	s := NewInhooksConfigService(logger, appConf)
+	err = s.Load("../testsupport/testdata/inhooksconfig/dup-flow.yml")
 	assert.ErrorContains(t, err, "validation err: flow ids must be unique. duplicate flow id: flow-1")
 }

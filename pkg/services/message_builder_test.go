@@ -30,6 +30,8 @@ func TestMessageBuilderFromHttp_OK(t *testing.T) {
 		"header-2": []string{"def"},
 	}
 
+	delay := 5 * time.Minute
+
 	flow := &models.Flow{
 		ID: flowID,
 		Source: &models.Source{
@@ -41,7 +43,7 @@ func TestMessageBuilderFromHttp_OK(t *testing.T) {
 			},
 			{
 				ID:    sink2ID,
-				Delay: 5 * time.Minute,
+				Delay: &delay,
 			},
 		},
 	}
