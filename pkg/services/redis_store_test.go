@@ -142,7 +142,7 @@ func (s *RedisStoreSuite) TestBLMove() {
 	s.Nil(noVal)
 }
 
-func (s *RedisStoreSuite) TestSetAndEnqueue() {
+func (s *RedisStoreSuite) TestSetAndEnqueue_SetAndMove() {
 	ctx := context.Background()
 	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
 	defer func() {
@@ -151,23 +151,56 @@ func (s *RedisStoreSuite) TestSetAndEnqueue() {
 	}()
 
 	value1 := []byte(`{"id": 123}`)
+	value2 := []byte(`{"id": 456}`)
+	value3 := []byte(`{"id": 789}`)
 
-	queueKey := "q:ready"
-	messageID := "abc123"
-	messageKey := "messages:abc123"
+	queueKeyProcessing := "q:processing"
+	messageID1 := "abc123"
+	messageKey1 := "messages:abc123"
+	messageID2 := "def456"
+	messageKey2 := "messages:def456"
+	messageID3 := "xyz789"
+	messageKey3 := "messages:xyz789"
 
-	err := s.redisStore.SetAndEnqueue(ctx, messageKey, value1, queueKey, messageID)
+	err := s.redisStore.SetAndEnqueue(ctx, messageKey1, value1, queueKeyProcessing, messageID1)
 	s.NoError(err)
 
-	queueResults, err := s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKey), 0, -1).Result()
+	queueResults, err := s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKeyProcessing), 0, -1).Result()
 	s.NoError(err)
-
 	s.Equal([]string{"abc123"}, queueResults)
 
-	val, err := s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey)).Result()
+	val, err := s.redisStore.Get(ctx, messageKey1)
+	s.NoError(err)
+	s.Equal(value1, val)
+
+	err = s.redisStore.SetAndEnqueue(ctx, messageKey2, value2, queueKeyProcessing, messageID2)
 	s.NoError(err)
 
-	s.Equal(string(value1), val)
+	err = s.redisStore.SetAndEnqueue(ctx, messageKey3, value3, queueKeyProcessing, messageID3)
+	s.NoError(err)
+
+	queueResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKeyProcessing), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"abc123", "def456", "xyz789"}, queueResults)
+
+	value2Updated := []byte(`{"id": 456, "updated": true}`)
+	queueKeyDone := "q:done"
+
+	err = s.redisStore.SetAndMove(ctx, messageKey2, value2Updated, queueKeyProcessing, queueKeyDone, messageID2)
+	s.NoError(err)
+
+	val, err = s.redisStore.Get(ctx, messageKey2)
+	s.NoError(err)
+	s.Equal(value2Updated, val)
+
+	queueResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKeyProcessing), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"abc123", "xyz789"}, queueResults)
+
+	queueResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKeyDone), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"def456"}, queueResults)
+
 }
 
 func (s *RedisStoreSuite) TestSetAndZAdd() {
@@ -205,78 +238,4 @@ func (s *RedisStoreSuite) TestSetAndZAdd() {
 	s.NoError(err)
 
 	s.Equal(string(value1), val)
-}
-
-func (s *RedisStoreSuite) TestGetAndBLMove() {
-	ctx := context.Background()
-	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
-	defer func() {
-		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
-		s.NoError(err)
-	}()
-
-	value1 := []byte(`{"id": "message-123"}`)
-	value2 := []byte(`{"id": "message-456"}`)
-	value3 := []byte(`{"id": "message-789"}`)
-
-	m1ID := "message-123"
-	m2ID := "message-456"
-	m3ID := "message-789"
-
-	sourceQueueKey := "q:ready"
-	destQueueKey := "q:processing"
-	m1Key := "m:message-123"
-	m2Key := "m:message-456"
-	m3Key := "m:message-789"
-
-	err := s.redisStore.SetAndEnqueue(ctx, m1Key, value1, sourceQueueKey, m1ID)
-	s.NoError(err)
-	err = s.redisStore.SetAndEnqueue(ctx, m2Key, value2, sourceQueueKey, m2ID)
-	s.NoError(err)
-	err = s.redisStore.SetAndEnqueue(ctx, m3Key, value3, destQueueKey, m3ID)
-	s.NoError(err)
-
-	sourceResults, err := s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, sourceQueueKey), 0, -1).Result()
-	s.NoError(err)
-	s.Equal([]string{"message-123", "message-456"}, sourceResults)
-
-	val1FromGet, err := s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, m1Key)).Result()
-	s.NoError(err)
-	s.Equal(string(value1), val1FromGet)
-
-	destResults, err := s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, destQueueKey), 0, -1).Result()
-	s.NoError(err)
-	s.Equal([]string{"message-789"}, destResults)
-
-	timeOut := 1 * time.Second
-
-	myM1ID, val1, err := s.redisStore.GetAndBLMove(ctx, m1Key, sourceQueueKey, destQueueKey, timeOut)
-	s.NoError(err)
-	s.Equal(value1, val1)
-	s.Equal(m1ID, myM1ID)
-
-	sourceResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, sourceQueueKey), 0, -1).Result()
-	s.NoError(err)
-	s.Equal([]string{"message-456"}, sourceResults)
-
-	destResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, destQueueKey), 0, -1).Result()
-	s.NoError(err)
-	s.Equal([]string{"message-789", "message-123"}, destResults)
-
-	m2ID, val2, err := s.redisStore.GetAndBLMove(ctx, timeOut, m2Key, sourceQueueKey, destQueueKey)
-	s.NoError(err)
-	s.Equal(val2, value2)
-
-	sourceResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, sourceQueueKey), 0, -1).Result()
-	s.NoError(err)
-	s.Equal([]string{}, sourceResults)
-
-	destResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, destQueueKey), 0, -1).Result()
-	s.NoError(err)
-	s.Equal([]string{`{"id": "message-789"}`, `{"id": "message-123"}`, `{"id": "message-456"}`}, destResults)
-
-	noMsdID, noVal, err := s.redisStore.BLMove(ctx, timeOut, sourceQueueKey, destQueueKey)
-	s.NoError(err)
-	s.Nil(noVal)
-
 }

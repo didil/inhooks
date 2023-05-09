@@ -28,13 +28,20 @@ type messageFetcher struct {
 func (f *messageFetcher) GetMessageForProcessing(ctx context.Context, timeout time.Duration, flowID string, sinkID string) (*models.Message, error) {
 	sourceQueueKey := queueKey(flowID, sinkID, QueueStatusReady)
 	destQueueKey := queueKey(flowID, sinkID, QueueStatusProcessing)
-	b, err := f.redisStore.BLMove(ctx, timeout, sourceQueueKey, destQueueKey)
+	mIDBytes, err := f.redisStore.BLMove(ctx, timeout, sourceQueueKey, destQueueKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to redis blmove. flow: %s sink: %s", flowID, sinkID)
 	}
-
-	if b == nil {
+	if mIDBytes == nil {
 		return nil, nil
+	}
+
+	mID := string(mIDBytes)
+
+	mKey := messageKey(flowID, sinkID, mID)
+	b, err := f.redisStore.Get(ctx, mKey)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to redis get. flow: %s sink: %s", flowID, sinkID)
 	}
 
 	var m models.Message

@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/didil/inhooks/pkg/models"
+	"github.com/pkg/errors"
 )
 
 type ProcessingResultsService interface {
@@ -50,13 +52,13 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 	}
 
 	if len(m.DeliveryAttempts) >= maxAttempts {
-		// enqueue to dead
+		//TODO: enqueue to dead
 		return nil
 	}
 
 	_ = getQueueStatus(m, s.timeSvc)
 
-	// move queues
+	//TODO: move queues
 
 	return nil
 }
@@ -68,9 +70,20 @@ func (s *processingResultsService) HandleOK(ctx context.Context, sink *models.Si
 		},
 	)
 
-	// need to move specific item from processing queue to done queue
+	mKey := messageKey(m.FlowID, m.SinkID, m.ID)
+	sourceQueueKey := queueKey(m.FlowID, m.SinkID, QueueStatusProcessing)
+	destQueueKey := queueKey(m.FlowID, m.SinkID, QueueStatusDone)
 
-	// move queues
+	b, err := json.Marshal(&m)
+	if err != nil {
+		return errors.Wrapf(err, "failed to encode message to set and move to done for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+	}
+
+	// update message and move to done
+	err = s.redisStore.SetAndMove(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to set and move to done for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+	}
 
 	return nil
 }

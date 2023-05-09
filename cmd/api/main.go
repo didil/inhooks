@@ -90,7 +90,7 @@ func main() {
 	httpClient := lib.NewHttpClient(appConf)
 
 	messageProcessor := services.NewMessageProcessor(httpClient)
-	processingResultsService := services.NewProcessingResultsService(timeSvc)
+	processingResultsService := services.NewProcessingResultsService(timeSvc, redisStore)
 
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
