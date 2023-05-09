@@ -26,8 +26,9 @@ func TestMessageEnqueuer(t *testing.T) {
 
 	messageEnqueuer := NewMessageEnqueuer(redisStore, timeSvc)
 
+	m1ID := "a5b6e039-f368-46fd-b0ed-ec9c68932179"
 	m1 := &models.Message{
-		ID:           "a5b6e039-f368-46fd-b0ed-ec9c68932179",
+		ID:           m1ID,
 		FlowID:       "flow-1",
 		SourceID:     "source-1",
 		SinkID:       "sink-1",
@@ -36,17 +37,19 @@ func TestMessageEnqueuer(t *testing.T) {
 		DeliverAfter: now.Add(-1 * time.Second),
 	}
 
-	k1 := "flow:flow-1:sink:sink-1:ready"
+	messageKey1 := "f:flow-1:s:sink-1:m:a5b6e039-f368-46fd-b0ed-ec9c68932179"
+	queueKey1 := "f:flow-1:s:sink-1:q:ready"
 	m1Bytes, err := json.Marshal(&m1)
 	assert.NoError(t, err)
 
 	redisStore.EXPECT().
-		Enqueue(ctx, k1, m1Bytes).
+		SetAndEnqueue(ctx, messageKey1, m1Bytes, queueKey1, m1ID).
 		Times(1).
 		Return(nil)
 
+	m2ID := "6e41b51c-1b90-4b0e-8504-3d0e633f8043"
 	m2 := &models.Message{
-		ID:           "a5b6e039-f368-46fd-b0ed-ec9c68932179",
+		ID:           m2ID,
 		FlowID:       "flow-1",
 		SourceID:     "source-1",
 		SinkID:       "sink-2",
@@ -55,12 +58,13 @@ func TestMessageEnqueuer(t *testing.T) {
 		DeliverAfter: now.Add(30 * time.Second),
 	}
 
-	k2 := "flow:flow-1:sink:sink-2:scheduled"
+	messageKey2 := "f:flow-1:s:sink-2:m:6e41b51c-1b90-4b0e-8504-3d0e633f8043"
+	queueKey2 := "f:flow-1:s:sink-2:q:scheduled"
 	m2Bytes, err := json.Marshal(&m2)
 	assert.NoError(t, err)
 
 	redisStore.EXPECT().
-		Enqueue(ctx, k2, m2Bytes).
+		SetAndZAdd(ctx, messageKey2, m2Bytes, queueKey2, m2ID, float64(m2.DeliverAfter.Unix())).
 		Times(1).
 		Return(nil)
 

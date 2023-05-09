@@ -34,10 +34,24 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 			return errors.Wrapf(err, "failed to encode message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
 		}
 
-		err = e.redisStore.Enqueue(ctx, queueKey(m.FlowID, m.SinkID, queueStatus), b)
-		if err != nil {
-			return errors.Wrapf(err, "failed to enqueue message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+		mKey := messageKey(m.FlowID, m.SinkID, m.ID)
+		qKey := queueKey(m.FlowID, m.SinkID, queueStatus)
+
+		switch queueStatus {
+		case QueueStatusReady:
+			err = e.redisStore.SetAndEnqueue(ctx, mKey, b, qKey, m.ID)
+			if err != nil {
+				return errors.Wrapf(err, "failed to set and enqueue message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+			}
+		case QueueStatusScheduled:
+			err = e.redisStore.SetAndZAdd(ctx, mKey, b, qKey, m.ID, float64(m.DeliverAfter.Unix()))
+			if err != nil {
+				return errors.Wrapf(err, "failed to set and enqueue message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+			}
+		default:
+			return fmt.Errorf("unexpected queue status %s", queueStatus)
 		}
+
 	}
 	return nil
 }
@@ -51,8 +65,16 @@ func getQueueStatus(m *models.Message, timeSvc TimeService) QueueStatus {
 	return QueueStatusReady
 }
 
+func flowSinkKeyPrefix(flowID string, sinkID string) string {
+	return fmt.Sprintf("f:%s:s:%s", flowID, sinkID)
+}
+
+func messageKey(flowID string, sinkID string, messageID string) string {
+	return fmt.Sprintf("%s:m:%s", flowSinkKeyPrefix(flowID, sinkID), messageID)
+}
+
 func queueKey(flowID string, sinkID string, queueStatus QueueStatus) string {
-	return fmt.Sprintf("flow:%s:sink:%s:%s", flowID, sinkID, queueStatus)
+	return fmt.Sprintf("%s:q:%s", flowSinkKeyPrefix(flowID, sinkID), queueStatus)
 }
 
 type QueueStatus string

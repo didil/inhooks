@@ -78,3 +78,47 @@ func (mr *MockRedisStoreMockRecorder) Enqueue(ctx, key, value interface{}) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockRedisStore)(nil).Enqueue), ctx, key, value)
 }
+
+// GetAndBLMove mocks base method.
+func (m *MockRedisStore) GetAndBLMove(ctx context.Context, messageKey, sourceQueueKey, destQueueKey string, timeout time.Duration) (string, []byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAndBLMove", ctx, messageKey, sourceQueueKey, destQueueKey, timeout)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].([]byte)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetAndBLMove indicates an expected call of GetAndBLMove.
+func (mr *MockRedisStoreMockRecorder) GetAndBLMove(ctx, messageKey, sourceQueueKey, destQueueKey, timeout interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAndBLMove", reflect.TypeOf((*MockRedisStore)(nil).GetAndBLMove), ctx, messageKey, sourceQueueKey, destQueueKey, timeout)
+}
+
+// SetAndEnqueue mocks base method.
+func (m *MockRedisStore) SetAndEnqueue(ctx context.Context, messageKey string, value []byte, queueKey, messageID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetAndEnqueue", ctx, messageKey, value, queueKey, messageID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetAndEnqueue indicates an expected call of SetAndEnqueue.
+func (mr *MockRedisStoreMockRecorder) SetAndEnqueue(ctx, messageKey, value, queueKey, messageID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAndEnqueue", reflect.TypeOf((*MockRedisStore)(nil).SetAndEnqueue), ctx, messageKey, value, queueKey, messageID)
+}
+
+// SetAndZAdd mocks base method.
+func (m *MockRedisStore) SetAndZAdd(ctx context.Context, messageKey string, value []byte, queueKey, messageID string, score float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetAndZAdd", ctx, messageKey, value, queueKey, messageID, score)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetAndZAdd indicates an expected call of SetAndZAdd.
+func (mr *MockRedisStoreMockRecorder) SetAndZAdd(ctx, messageKey, value, queueKey, messageID, score interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAndZAdd", reflect.TypeOf((*MockRedisStore)(nil).SetAndZAdd), ctx, messageKey, value, queueKey, messageID, score)
+}
