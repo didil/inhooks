@@ -27,6 +27,9 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 	flow1ById := s.GetFlow("flow-1")
 	assert.Equal(t, flow1, flow1ById)
 
+	delay1 := 0 * time.Second
+	maxAttempts1 := 3
+
 	assert.Equal(t, &models.Flow{
 		ID: "flow-1",
 		Source: &models.Source{
@@ -36,9 +39,11 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 		},
 		Sinks: []*models.Sink{
 			{
-				ID:   "sink-1",
-				Type: "http",
-				URL:  "https://example.com/sink",
+				ID:          "sink-1",
+				Type:        "http",
+				URL:         "https://example.com/sink",
+				Delay:       &delay1,
+				MaxAttempts: &maxAttempts1,
 			},
 		},
 	}, flow1)
@@ -49,9 +54,9 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 	flow2ById := s.GetFlow("flow-2")
 	assert.Equal(t, flow2, flow2ById)
 
-	delay := 15 * time.Minute
-	retryAfter := 12 * time.Minute
-	maxAttempts := 6
+	delay2 := 15 * time.Minute
+	retryAfter2 := 2 * time.Minute
+	maxAttempts2 := 5
 	assert.Equal(t, &models.Flow{
 		ID: "flow-2",
 		Source: &models.Source{
@@ -64,9 +69,9 @@ func TestInhooksConfigService_Load_OK(t *testing.T) {
 				ID:          "sink-2",
 				Type:        "http",
 				URL:         "https://example.com/sink",
-				Delay:       &delay,
-				RetryAfter:  &retryAfter,
-				MaxAttempts: &maxAttempts,
+				Delay:       &delay2,
+				RetryAfter:  &retryAfter2,
+				MaxAttempts: &maxAttempts2,
 			},
 		},
 	}, flow2)

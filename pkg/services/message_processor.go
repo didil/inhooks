@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/didil/inhooks/pkg/models"
+	"github.com/didil/inhooks/pkg/version"
 	"github.com/pkg/errors"
 )
 
@@ -46,6 +47,8 @@ func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m
 		req.URL.RawQuery = m.RawQuery
 	}
 
+	req.Header["User-Agent"] = []string{p.userAgent()}
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return errors.Wrapf(err, "failed to send http request. sink: %s m:%s", sink.ID, m.ID)
@@ -57,4 +60,8 @@ func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m
 	}
 
 	return nil
+}
+
+func (p *messageProcessor) userAgent() string {
+	return fmt.Sprintf("Inhooks/v%s (https://github.com/didil/inhooks)", version.GetVersion())
 }

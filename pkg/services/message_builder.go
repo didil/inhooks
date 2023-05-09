@@ -3,6 +3,7 @@ package services
 import (
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/google/uuid"
@@ -44,9 +45,12 @@ func (b *messageBuilder) FromHttp(flow *models.Flow, r *http.Request) ([]*models
 		m.Payload = payload
 
 		// init processing info
+		var delay time.Duration
 		if s.Delay != nil {
-			m.DeliverAfter = b.timeSvc.Now().Add(*s.Delay)
+			delay = *s.Delay
 		}
+
+		m.DeliverAfter = b.timeSvc.Now().Add(delay)
 
 		messages = append(messages, m)
 	}

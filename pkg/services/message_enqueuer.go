@@ -61,4 +61,5 @@ const (
 	QueueStatusScheduled  QueueStatus = "scheduled"
 	QueueStatusReady      QueueStatus = "ready"
 	QueueStatusProcessing QueueStatus = "processing"
+	QueueStatusDone       QueueStatus = "done"
 )

@@ -14,10 +14,18 @@ import (
 	"github.com/didil/inhooks/pkg/server/handlers"
 	"github.com/didil/inhooks/pkg/services"
 	"github.com/didil/inhooks/pkg/supervisor"
+	versionpkg "github.com/didil/inhooks/pkg/version"
 	"go.uber.org/zap"
 )
 
+var (
+	// the version is set by goreleaser: https://goreleaser.com/cookbooks/using-main.version/
+	version = "dev"
+)
+
 func main() {
+	versionpkg.SetVersion(version)
+
 	err := lib.LoadEnv()
 	if err != nil {
 		log.Fatalf("failed to load env: %v", err)

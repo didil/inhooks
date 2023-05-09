@@ -13,12 +13,14 @@ type ProcessingResultsService interface {
 }
 
 type processingResultsService struct {
-	timeSvc TimeService
+	timeSvc    TimeService
+	redisStore RedisStore
 }
 
-func NewProcessingResultsService(timeSvc TimeService) ProcessingResultsService {
+func NewProcessingResultsService(timeSvc TimeService, redisStore RedisStore) ProcessingResultsService {
 	return &processingResultsService{
-		timeSvc: timeSvc,
+		timeSvc:    timeSvc,
+		redisStore: redisStore,
 	}
 }
 
@@ -65,6 +67,8 @@ func (s *processingResultsService) HandleOK(ctx context.Context, sink *models.Si
 			Status: models.DeliveryAttemptStatusOK,
 		},
 	)
+
+	// need to move specific item from processing queue to done queue
 
 	// move queues
 
