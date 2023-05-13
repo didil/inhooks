@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:6.2.12
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+  nginx-lb-updater:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=
+      - REDIS_INHOOKS_DB_NAME=dev
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./inhooks.yml:/app/inhooks.yml:ro
+
+volumes:
+  redis-data:

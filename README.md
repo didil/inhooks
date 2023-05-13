@@ -63,11 +63,6 @@ cp .env.example .env
 cp .env.test.example .env.test
 ```
 
-### Run Dev Server
-```shell
-make run-dev
-```
-
 ### Run tests
 ```shell
 make test
@@ -78,6 +73,15 @@ make test
 make lint
 ```
 
+### Run Dev Server
+```shell
+make run-dev
+```
+
+Run Docker Compose
+```shell
+docker-compose up
+```
 
 ## Contributing
 Feel free to open new issues or PRs ! You can also reach out to the maintainer at the email address: adil-inhooks@ledidil.com

@@ -2,6 +2,8 @@
 FROM golang:1.20-alpine AS base
 
 RUN apk update && apk add --no-cache build-base
+RUN apk add git
+
 
 WORKDIR /app
 

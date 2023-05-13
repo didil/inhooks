@@ -18,7 +18,7 @@ type AppConfig struct {
 }
 
 type Server struct {
-	Host                string        `env:"HOST,default=localhost"`
+	Host                string        `env:"HOST"`
 	Port                int           `env:"PORT,default=3000"`
 	ShutdownGracePeriod time.Duration `env:"SERVER_SHUTDOWN_GRACE_PERIOD,default=5s"`
 }

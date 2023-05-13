@@ -1,4 +1,5 @@
 MYGOBIN = $(PWD)/bin
+GIT_SHA = $(shell git rev-parse --short HEAD)
 
 install-tools:
 	@echo MYGOBIN: $(MYGOBIN)
@@ -14,7 +15,7 @@ lint:
 	$(MYGOBIN)/golangci-lint run
 
 build:
-	go build -ldflags="-X 'main.version=$(git rev-parse --short HEAD)'" -o bin/api cmd/api/main.go
+	go build -ldflags="-X 'main.version=$(GIT_SHA)'" -o bin/api cmd/api/main.go
 
 run-dev:
 	APP_ENV=development go run cmd/api/main.go
