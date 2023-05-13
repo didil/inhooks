@@ -120,11 +120,12 @@ func (s *redisStore) SetLRemZAdd(ctx context.Context, messageKey string, value [
 	sourceKeyWithPrefix := s.keyWithPrefix(sourceQueueKey)
 	pipe.LRem(ctx, sourceKeyWithPrefix, 0, messageID)
 
+	destKeyWithPrefix := s.keyWithPrefix(destQueueKey)
 	z := redis.Z{
 		Score:  score,
 		Member: messageID,
 	}
-	pipe.ZAdd(ctx, destQueueKey, z)
+	pipe.ZAdd(ctx, destKeyWithPrefix, z)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {

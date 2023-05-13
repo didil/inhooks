@@ -83,7 +83,7 @@ func (s *Supervisor) Start() {
 			wg.Add(1)
 
 			go func() {
-				// move all from processing to ready (in case of previous crash)
+				//TODO: move all from processing to ready (in case of previous crash)
 
 				s.HandleReadyQueue(s.ctx, f, sink)
 				wg.Done()

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/pkg/errors"
@@ -26,8 +27,9 @@ type messageEnqueuer struct {
 }
 
 func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) error {
+
 	for _, m := range messages {
-		queueStatus := getQueueStatus(m, e.timeSvc)
+		queueStatus := getQueueStatus(m, e.timeSvc.Now())
 
 		b, err := json.Marshal(&m)
 		if err != nil {
@@ -56,8 +58,8 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 	return nil
 }
 
-func getQueueStatus(m *models.Message, timeSvc TimeService) QueueStatus {
-	if m.DeliverAfter.After(timeSvc.Now()) {
+func getQueueStatus(m *models.Message, now time.Time) QueueStatus {
+	if m.DeliverAfter.After(now) {
 		// schedule in the future
 		return QueueStatusScheduled
 	}

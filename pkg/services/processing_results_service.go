@@ -71,7 +71,7 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 		return nil
 	}
 
-	queueStatus := getQueueStatus(m, s.timeSvc)
+	queueStatus := getQueueStatus(m, now)
 	destQueueKey := queueKey(m.FlowID, m.SinkID, queueStatus)
 
 	switch queueStatus {
@@ -91,6 +91,7 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 
 	return nil
 }
+
 func (s *processingResultsService) HandleOK(ctx context.Context, m *models.Message) error {
 	m.DeliveryAttempts = append(m.DeliveryAttempts,
 		&models.DeliveryAttempt{

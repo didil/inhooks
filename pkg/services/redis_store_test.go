@@ -249,29 +249,41 @@ func (s *RedisStoreSuite) TestSetLRemZAdd() {
 	}()
 
 	value1 := []byte(`{"id": 123}`)
+	value2 := []byte(`{"id": 456}`)
 	deliverAfter := time.Date(2023, 05, 5, 8, 9, 24, 0, time.UTC).Unix()
 
-	setKey := "scheduled"
-	messageID := "abc123"
-	messageKey := "messages:abc123"
+	queueKeyScheduled := "q:scheduled"
+	queueKeyProcessing := "q:processing"
 
-	err := s.redisStore.SetLRemZAdd(ctx, messageKey, value1, setKey, messageID, float64(deliverAfter))
+	messageID1 := "abc123"
+	messageKey1 := "messages:abc123"
+
+	messageID2 := "def456"
+	messageKey2 := "messages:def456"
+
+	err := s.redisStore.SetAndEnqueue(ctx, messageKey1, value1, queueKeyProcessing, messageID1)
+	s.NoError(err)
+	err = s.redisStore.SetAndEnqueue(ctx, messageKey2, value2, queueKeyProcessing, messageID2)
 	s.NoError(err)
 
-	setKeyWithPrefix := fmt.Sprintf("%s:%s", prefix, setKey)
+	queueResults, err := s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKeyProcessing), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"abc123", "def456"}, queueResults)
 
-	prevDate := time.Date(2023, 05, 4, 8, 9, 24, 0, time.UTC).Unix()
-	otherID := "my-id"
-
-	_, err = s.client.ZAdd(ctx, setKeyWithPrefix, redis.Z{Score: float64(prevDate), Member: otherID}).Result()
+	err = s.redisStore.SetLRemZAdd(ctx, messageKey1, value1, queueKeyProcessing, queueKeyScheduled, messageID1, float64(deliverAfter))
 	s.NoError(err)
 
-	queueResults, err := s.client.ZRange(ctx, setKeyWithPrefix, 0, -1).Result()
+	queueKeyScheduledWithPrefix := fmt.Sprintf("%s:%s", prefix, queueKeyScheduled)
+
+	queueResults, err = s.client.ZRange(ctx, queueKeyScheduledWithPrefix, 0, -1).Result()
 	s.NoError(err)
+	s.Equal([]string{"abc123"}, queueResults)
 
-	s.Equal([]string{"my-id", "abc123"}, queueResults)
+	queueResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKeyProcessing), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"def456"}, queueResults)
 
-	val, err := s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey)).Result()
+	val, err := s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey1)).Result()
 	s.NoError(err)
 
 	s.Equal(string(value1), val)

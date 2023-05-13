@@ -37,7 +37,8 @@ func TestUpdateLB(t *testing.T) {
 	defer s.Close()
 
 	flow := &models.Flow{
-		ID: "flow-1",
+		ID:     "flow-1",
+		Source: &models.Source{},
 	}
 
 	inhooksConfigSvc.EXPECT().FindFlowForSource("my-source").Return(flow)

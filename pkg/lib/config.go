@@ -30,6 +30,7 @@ type Redis struct {
 // Supervisor queues handling settings
 type Supervisor struct {
 	ReadyWaitTime time.Duration `env:"SUPERVISOR_READY_WAIT_TIME,default=5s"`
+	ErrSleepTime  time.Duration `env:"SUPERVISOR_ERR_SLEEP_TIME,default=5s"`
 }
 
 type HTTPClient struct {
