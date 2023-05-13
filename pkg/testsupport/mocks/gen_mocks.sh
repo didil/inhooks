@@ -9,6 +9,7 @@ services=(
     "message_fetcher"
     "message_processor"
     "processing_results_service"
+    "scheduler_service"
 )
 
 for service in ${services[@]}

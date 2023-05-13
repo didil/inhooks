@@ -18,6 +18,7 @@ type Supervisor struct {
 	inhooksConfigSvc     services.InhooksConfigService
 	messageProcessor     services.MessageProcessor
 	processingResultsSvc services.ProcessingResultsService
+	schedulerSvc         services.SchedulerService
 }
 
 type SupervisorOpt func(s *Supervisor)
@@ -72,6 +73,12 @@ func WithProcessingResultsService(processingResultsSvc services.ProcessingResult
 	}
 }
 
+func WithSchedulerService(schedulerService services.SchedulerService) SupervisorOpt {
+	return func(s *Supervisor) {
+		s.schedulerSvc = schedulerService
+	}
+}
+
 func (s *Supervisor) Start() {
 	wg := &sync.WaitGroup{}
 	flows := s.inhooksConfigSvc.GetFlows()
@@ -80,11 +87,16 @@ func (s *Supervisor) Start() {
 
 		for j := 0; j < len(f.Sinks); j++ {
 			sink := f.Sinks[j]
-			wg.Add(1)
+			wg.Add(2)
 
 			go func() {
 				//TODO: move all from processing to ready (in case of previous crash)
 				s.HandleReadyQueue(s.ctx, f, sink)
+				wg.Done()
+			}()
+
+			go func() {
+				s.HandleScheduledQueue(s.ctx, f, sink)
 				wg.Done()
 			}()
 		}

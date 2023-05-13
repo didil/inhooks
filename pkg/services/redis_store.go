@@ -18,6 +18,8 @@ type RedisStore interface {
 	Enqueue(ctx context.Context, key string, value []byte) error
 	Dequeue(ctx context.Context, timeout time.Duration, key string) ([]byte, error)
 	BLMove(ctx context.Context, timeout time.Duration, sourceQueueKey string, destQueueKey string) ([]byte, error)
+	ZRangeBelowScore(ctx context.Context, queueKey string, score float64) ([]string, error)
+	ZRemRpush(ctx context.Context, messageIDs []string, sourceQueueKey string, destQueueKey string) error
 }
 
 type redisStore struct {
@@ -182,4 +184,39 @@ func (s *redisStore) BLMove(ctx context.Context, timeout time.Duration, sourceQu
 
 func (s *redisStore) keyWithPrefix(key string) string {
 	return fmt.Sprintf("inhooks:%s:%s", s.inhooksDBName, key)
+}
+
+func (s *redisStore) ZRangeBelowScore(ctx context.Context, queueKey string, maxScore float64) ([]string, error) {
+	queueKeyWithPrefix := s.keyWithPrefix(queueKey)
+
+	args := redis.ZRangeArgs{
+		Key:     queueKeyWithPrefix,
+		Start:   "-inf",
+		Stop:    maxScore,
+		ByScore: true,
+	}
+
+	vals, err := s.client.ZRangeArgs(ctx, args).Result()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to zrange. queueKey: %s", queueKeyWithPrefix)
+	}
+
+	return vals, nil
+}
+
+func (s *redisStore) ZRemRpush(ctx context.Context, messageIDs []string, sourceQueueKey string, destQueueKey string) error {
+	pipe := s.client.TxPipeline()
+
+	sourceKeyWithPrefix := s.keyWithPrefix(sourceQueueKey)
+	pipe.ZRem(ctx, sourceKeyWithPrefix, messageIDs)
+
+	destKeyWithPrefix := s.keyWithPrefix(destQueueKey)
+	pipe.RPush(ctx, destKeyWithPrefix, messageIDs)
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

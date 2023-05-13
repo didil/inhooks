@@ -149,3 +149,32 @@ func (mr *MockRedisStoreMockRecorder) SetLRemZAdd(ctx, messageKey, value, source
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLRemZAdd", reflect.TypeOf((*MockRedisStore)(nil).SetLRemZAdd), ctx, messageKey, value, sourceQueueKey, destQueueKey, messageID, score)
 }
+
+// ZRangeBelowScore mocks base method.
+func (m *MockRedisStore) ZRangeBelowScore(ctx context.Context, queueKey string, score float64) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ZRangeBelowScore", ctx, queueKey, score)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ZRangeBelowScore indicates an expected call of ZRangeBelowScore.
+func (mr *MockRedisStoreMockRecorder) ZRangeBelowScore(ctx, queueKey, score interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRangeBelowScore", reflect.TypeOf((*MockRedisStore)(nil).ZRangeBelowScore), ctx, queueKey, score)
+}
+
+// ZRemRpush mocks base method.
+func (m *MockRedisStore) ZRemRpush(ctx context.Context, messageIDs []string, sourceQueueKey, destQueueKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ZRemRpush", ctx, messageIDs, sourceQueueKey, destQueueKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ZRemRpush indicates an expected call of ZRemRpush.
+func (mr *MockRedisStoreMockRecorder) ZRemRpush(ctx, messageIDs, sourceQueueKey, destQueueKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRemRpush", reflect.TypeOf((*MockRedisStore)(nil).ZRemRpush), ctx, messageIDs, sourceQueueKey, destQueueKey)
+}
