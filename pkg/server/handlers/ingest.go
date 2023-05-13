@@ -25,6 +25,8 @@ func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger = logger.With(zap.String("flowID", flow.ID), zap.String("sourceID", flow.Source.ID))
+
 	// build messages
 	messages, err := app.messageBuilder.FromHttp(flow, r)
 	if err != nil {

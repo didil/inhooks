@@ -239,3 +239,40 @@ func (s *RedisStoreSuite) TestSetAndZAdd() {
 
 	s.Equal(string(value1), val)
 }
+
+func (s *RedisStoreSuite) TestSetLRemZAdd() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	value1 := []byte(`{"id": 123}`)
+	deliverAfter := time.Date(2023, 05, 5, 8, 9, 24, 0, time.UTC).Unix()
+
+	setKey := "scheduled"
+	messageID := "abc123"
+	messageKey := "messages:abc123"
+
+	err := s.redisStore.SetLRemZAdd(ctx, messageKey, value1, setKey, messageID, float64(deliverAfter))
+	s.NoError(err)
+
+	setKeyWithPrefix := fmt.Sprintf("%s:%s", prefix, setKey)
+
+	prevDate := time.Date(2023, 05, 4, 8, 9, 24, 0, time.UTC).Unix()
+	otherID := "my-id"
+
+	_, err = s.client.ZAdd(ctx, setKeyWithPrefix, redis.Z{Score: float64(prevDate), Member: otherID}).Result()
+	s.NoError(err)
+
+	queueResults, err := s.client.ZRange(ctx, setKeyWithPrefix, 0, -1).Result()
+	s.NoError(err)
+
+	s.Equal([]string{"my-id", "abc123"}, queueResults)
+
+	val, err := s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey)).Result()
+	s.NoError(err)
+
+	s.Equal(string(value1), val)
+}

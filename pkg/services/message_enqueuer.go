@@ -31,7 +31,7 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 
 		b, err := json.Marshal(&m)
 		if err != nil {
-			return errors.Wrapf(err, "failed to encode message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+			return errors.Wrapf(err, "failed to encode message for sink: %s", m.SinkID)
 		}
 
 		mKey := messageKey(m.FlowID, m.SinkID, m.ID)
@@ -41,12 +41,12 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 		case QueueStatusReady:
 			err = e.redisStore.SetAndEnqueue(ctx, mKey, b, qKey, m.ID)
 			if err != nil {
-				return errors.Wrapf(err, "failed to set and enqueue message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+				return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
 			}
 		case QueueStatusScheduled:
 			err = e.redisStore.SetAndZAdd(ctx, mKey, b, qKey, m.ID, float64(m.DeliverAfter.Unix()))
 			if err != nil {
-				return errors.Wrapf(err, "failed to set and enqueue message for flow: %s source: %s sink: %s", m.FlowID, m.SourceID, m.SinkID)
+				return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
 			}
 		default:
 			return fmt.Errorf("unexpected queue status %s", queueStatus)
@@ -84,4 +84,5 @@ const (
 	QueueStatusReady      QueueStatus = "ready"
 	QueueStatusProcessing QueueStatus = "processing"
 	QueueStatusDone       QueueStatus = "done"
+	QueueStatusDead       QueueStatus = "dead"
 )

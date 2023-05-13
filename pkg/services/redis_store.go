@@ -14,6 +14,7 @@ type RedisStore interface {
 	SetAndEnqueue(ctx context.Context, messageKey string, value []byte, queueKey string, messageID string) error
 	SetAndZAdd(ctx context.Context, messageKey string, value []byte, queueKey string, messageID string, score float64) error
 	SetAndMove(ctx context.Context, messageKey string, value []byte, sourceQueueKey, destQueueKey string, messageID string) error
+	SetLRemZAdd(ctx context.Context, messageKey string, value []byte, sourceQueueKey, destQueueKey string, messageID string, score float64) error
 	Enqueue(ctx context.Context, key string, value []byte) error
 	Dequeue(ctx context.Context, timeout time.Duration, key string) ([]byte, error)
 	BLMove(ctx context.Context, timeout time.Duration, sourceQueueKey string, destQueueKey string) ([]byte, error)
@@ -101,6 +102,29 @@ func (s *redisStore) SetAndMove(ctx context.Context, messageKey string, value []
 
 	destKeyWithPrefix := s.keyWithPrefix(destQueueKey)
 	pipe.RPush(ctx, destKeyWithPrefix, messageID)
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *redisStore) SetLRemZAdd(ctx context.Context, messageKey string, value []byte, sourceQueueKey, destQueueKey string, messageID string, score float64) error {
+	pipe := s.client.TxPipeline()
+
+	messageKeyWithPrefix := s.keyWithPrefix(messageKey)
+	pipe.Set(ctx, messageKeyWithPrefix, value, 0)
+
+	sourceKeyWithPrefix := s.keyWithPrefix(sourceQueueKey)
+	pipe.LRem(ctx, sourceKeyWithPrefix, 0, messageID)
+
+	z := redis.Z{
+		Score:  score,
+		Member: messageID,
+	}
+	pipe.ZAdd(ctx, destQueueKey, z)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {

@@ -135,3 +135,17 @@ func (mr *MockRedisStoreMockRecorder) SetAndZAdd(ctx, messageKey, value, queueKe
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAndZAdd", reflect.TypeOf((*MockRedisStore)(nil).SetAndZAdd), ctx, messageKey, value, queueKey, messageID, score)
 }
+
+// SetLRemZAdd mocks base method.
+func (m *MockRedisStore) SetLRemZAdd(ctx context.Context, messageKey string, value []byte, sourceQueueKey, destQueueKey, messageID string, score float64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetLRemZAdd", ctx, messageKey, value, sourceQueueKey, destQueueKey, messageID, score)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetLRemZAdd indicates an expected call of SetLRemZAdd.
+func (mr *MockRedisStoreMockRecorder) SetLRemZAdd(ctx, messageKey, value, sourceQueueKey, destQueueKey, messageID, score interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLRemZAdd", reflect.TypeOf((*MockRedisStore)(nil).SetLRemZAdd), ctx, messageKey, value, sourceQueueKey, destQueueKey, messageID, score)
+}
