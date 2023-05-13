@@ -19,7 +19,6 @@ import (
 )
 
 var (
-	// the version is set by goreleaser: https://goreleaser.com/cookbooks/using-main.version/
 	version = "dev"
 )
 
@@ -42,7 +41,9 @@ func main() {
 	}
 
 	inhooksConfigSvc := services.NewInhooksConfigService(logger, appConf)
-	err = inhooksConfigSvc.Load("inhooks.yml")
+	logger.Info("loading inhooks config", zap.String("inhooksConfigFile", appConf.InhooksConfigFile))
+
+	err = inhooksConfigSvc.Load(appConf.InhooksConfigFile)
 	if err != nil {
 		logger.Fatal("failed to load inhooks config", zap.Error(err))
 	}

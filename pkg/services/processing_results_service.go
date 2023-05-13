@@ -11,7 +11,7 @@ import (
 )
 
 type ProcessingResultsService interface {
-	HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) error
+	HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (models.QueueStatus, error)
 	HandleOK(ctx context.Context, m *models.Message) error
 }
 
@@ -27,7 +27,7 @@ func NewProcessingResultsService(timeSvc TimeService, redisStore RedisStore) Pro
 	}
 }
 
-func (s *processingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) error {
+func (s *processingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (models.QueueStatus, error) {
 	now := s.timeSvc.Now()
 	m.DeliveryAttempts = append(m.DeliveryAttempts,
 		&models.DeliveryAttempt{
@@ -53,43 +53,43 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 	}
 
 	mKey := messageKey(m.FlowID, m.SinkID, m.ID)
-	sourceQueueKey := queueKey(m.FlowID, m.SinkID, QueueStatusProcessing)
+	sourceQueueKey := queueKey(m.FlowID, m.SinkID, models.QueueStatusProcessing)
 
 	b, err := json.Marshal(&m)
 	if err != nil {
-		return errors.Wrapf(err, "failed to encode message")
+		return "", errors.Wrapf(err, "failed to encode message")
 	}
 
 	if len(m.DeliveryAttempts) >= maxAttempts {
 		// update message and move to dead
-		destQueueKey := queueKey(m.FlowID, m.SinkID, QueueStatusDead)
+		destQueueKey := queueKey(m.FlowID, m.SinkID, models.QueueStatusDead)
 		err = s.redisStore.SetAndMove(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set and move to dead")
+			return "", errors.Wrapf(err, "failed to set and move to dead")
 		}
 
-		return nil
+		return models.QueueStatusDead, nil
 	}
 
 	queueStatus := getQueueStatus(m, now)
 	destQueueKey := queueKey(m.FlowID, m.SinkID, queueStatus)
 
 	switch queueStatus {
-	case QueueStatusReady:
+	case models.QueueStatusReady:
 		err = s.redisStore.SetAndMove(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to set and enqueue ready message")
+			return "", errors.Wrapf(err, "failed to set and enqueue ready message")
 		}
-	case QueueStatusScheduled:
+	case models.QueueStatusScheduled:
 		err = s.redisStore.SetLRemZAdd(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID, float64(m.DeliverAfter.Unix()))
 		if err != nil {
-			return errors.Wrapf(err, "failed to set and enqueue scheduled message")
+			return "", errors.Wrapf(err, "failed to set and enqueue scheduled message")
 		}
 	default:
-		return fmt.Errorf("unexpected queue status %s", queueStatus)
+		return "", fmt.Errorf("unexpected queue status %s", queueStatus)
 	}
 
-	return nil
+	return queueStatus, nil
 }
 
 func (s *processingResultsService) HandleOK(ctx context.Context, m *models.Message) error {
@@ -101,8 +101,8 @@ func (s *processingResultsService) HandleOK(ctx context.Context, m *models.Messa
 	)
 
 	mKey := messageKey(m.FlowID, m.SinkID, m.ID)
-	sourceQueueKey := queueKey(m.FlowID, m.SinkID, QueueStatusProcessing)
-	destQueueKey := queueKey(m.FlowID, m.SinkID, QueueStatusDone)
+	sourceQueueKey := queueKey(m.FlowID, m.SinkID, models.QueueStatusProcessing)
+	destQueueKey := queueKey(m.FlowID, m.SinkID, models.QueueStatusDone)
 
 	b, err := json.Marshal(&m)
 	if err != nil {

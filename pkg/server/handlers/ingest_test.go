@@ -52,7 +52,7 @@ func TestUpdateLB(t *testing.T) {
 		},
 	}
 
-	messageBuilder.EXPECT().FromHttp(flow, gomock.AssignableToTypeOf(&http.Request{})).Return(messages, nil)
+	messageBuilder.EXPECT().FromHttp(flow, gomock.AssignableToTypeOf(&http.Request{}), gomock.AssignableToTypeOf("")).Return(messages, nil)
 
 	messageEnqueuer.EXPECT().Enqueue(gomock.Any(), messages).Return(nil)
 

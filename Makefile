@@ -14,7 +14,7 @@ lint:
 	$(MYGOBIN)/golangci-lint run
 
 build:
-	go build -o bin/api cmd/api/main.go
+	go build -ldflags="-X 'main.version=$(git rev-parse --short HEAD)'" -o bin/api cmd/api/main.go
 
 run-dev:
 	APP_ENV=development go run cmd/api/main.go

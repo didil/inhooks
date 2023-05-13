@@ -28,7 +28,7 @@ func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 	logger = logger.With(zap.String("flowID", flow.ID), zap.String("sourceID", flow.Source.ID))
 
 	// build messages
-	messages, err := app.messageBuilder.FromHttp(flow, r)
+	messages, err := app.messageBuilder.FromHttp(flow, r, reqID)
 	if err != nil {
 		logger.Error("ingest request failed: unable to build messages", zap.Error(err))
 		app.WriteJSONErr(w, http.StatusBadRequest, reqID, fmt.Errorf("unable to read data"))

@@ -37,7 +37,7 @@ func TestMessageProcessor(t *testing.T) {
 
 		assert.Equal(t, http.Header{
 			"X-Key":           []string{"123"},
-			"User-Agent":      []string{"Inhooks/vtest (https://github.com/didil/inhooks)"},
+			"User-Agent":      []string{"Inhooks/test (https://github.com/didil/inhooks)"},
 			"Content-Length":  []string{"21"},
 			"Accept-Encoding": []string{"*"},
 		}, req.Header)

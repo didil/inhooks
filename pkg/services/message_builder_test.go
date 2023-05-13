@@ -24,6 +24,7 @@ func TestMessageBuilderFromHttp_OK(t *testing.T) {
 	b := bytes.NewBuffer(jsonPayload)
 	rawQuery := "x=abc&yz=this%20is%20ok"
 	r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/v1/ingest/%s?%s", flowID, rawQuery), b)
+	reqID := "request-id-xyz"
 
 	r.Header = http.Header{
 		"header-1": []string{"abc"},
@@ -56,7 +57,7 @@ func TestMessageBuilderFromHttp_OK(t *testing.T) {
 	timeSvc.EXPECT().Now().Times(2).Return(now)
 
 	d := NewMessageBuilder(timeSvc)
-	messages, err := d.FromHttp(flow, r)
+	messages, err := d.FromHttp(flow, r, reqID)
 	assert.NoError(t, err)
 
 	m1 := messages[0]
@@ -66,6 +67,7 @@ func TestMessageBuilderFromHttp_OK(t *testing.T) {
 
 	assert.Equal(t, flowID, m1.FlowID)
 	assert.Equal(t, sourceID, m1.SourceID)
+	assert.Equal(t, reqID, m1.IngestedReqID)
 	assert.Equal(t, sink1ID, m1.SinkID)
 	assert.Equal(t, rawQuery, m1.RawQuery)
 	assert.Equal(t, r.Header, m1.HttpHeaders)
@@ -79,6 +81,7 @@ func TestMessageBuilderFromHttp_OK(t *testing.T) {
 
 	assert.Equal(t, flowID, m2.FlowID)
 	assert.Equal(t, sourceID, m2.SourceID)
+	assert.Equal(t, reqID, m1.IngestedReqID)
 	assert.Equal(t, sink2ID, m2.SinkID)
 	assert.Equal(t, rawQuery, m2.RawQuery)
 	assert.Equal(t, r.Header, m2.HttpHeaders)

@@ -119,8 +119,9 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore)
-	err = s.HandleFailed(ctx, sink, m, processingErr)
+	qStatus, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
+	assert.Equal(t, models.QueueStatusDead, qStatus)
 }
 
 func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
@@ -180,8 +181,9 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 	redisStore.EXPECT().SetLRemZAdd(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID, float64(mUpdated.DeliverAfter.Unix())).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore)
-	err = s.HandleFailed(ctx, sink, m, processingErr)
+	qStatus, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
+	assert.Equal(t, models.QueueStatusScheduled, qStatus)
 }
 
 func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
@@ -241,6 +243,7 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore)
-	err = s.HandleFailed(ctx, sink, m, processingErr)
+	qStatus, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
+	assert.Equal(t, models.QueueStatusReady, qStatus)
 }

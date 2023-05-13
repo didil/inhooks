@@ -36,16 +36,16 @@ func (m *MockMessageBuilder) EXPECT() *MockMessageBuilderMockRecorder {
 }
 
 // FromHttp mocks base method.
-func (m *MockMessageBuilder) FromHttp(flow *models.Flow, r *http.Request) ([]*models.Message, error) {
+func (m *MockMessageBuilder) FromHttp(flow *models.Flow, r *http.Request, reqID string) ([]*models.Message, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FromHttp", flow, r)
+	ret := m.ctrl.Call(m, "FromHttp", flow, r, reqID)
 	ret0, _ := ret[0].([]*models.Message)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FromHttp indicates an expected call of FromHttp.
-func (mr *MockMessageBuilderMockRecorder) FromHttp(flow, r interface{}) *gomock.Call {
+func (mr *MockMessageBuilderMockRecorder) FromHttp(flow, r, reqID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FromHttp", reflect.TypeOf((*MockMessageBuilder)(nil).FromHttp), flow, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FromHttp", reflect.TypeOf((*MockMessageBuilder)(nil).FromHttp), flow, r, reqID)
 }

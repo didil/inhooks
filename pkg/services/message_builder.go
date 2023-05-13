@@ -10,7 +10,7 @@ import (
 )
 
 type MessageBuilder interface {
-	FromHttp(flow *models.Flow, r *http.Request) ([]*models.Message, error)
+	FromHttp(flow *models.Flow, r *http.Request, reqID string) ([]*models.Message, error)
 }
 
 type messageBuilder struct {
@@ -23,7 +23,7 @@ func NewMessageBuilder(timeSvc TimeService) MessageBuilder {
 	}
 }
 
-func (b *messageBuilder) FromHttp(flow *models.Flow, r *http.Request) ([]*models.Message, error) {
+func (b *messageBuilder) FromHttp(flow *models.Flow, r *http.Request, reqID string) ([]*models.Message, error) {
 	httpHeaders := r.Header
 	payload, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -38,6 +38,7 @@ func (b *messageBuilder) FromHttp(flow *models.Flow, r *http.Request) ([]*models
 
 		m.FlowID = flow.ID
 		m.SourceID = flow.Source.ID
+		m.IngestedReqID = reqID
 		m.SinkID = s.ID
 		m.ID = uuid.New().String()
 		m.HttpHeaders = httpHeaders

@@ -26,8 +26,8 @@ type messageFetcher struct {
 }
 
 func (f *messageFetcher) GetMessageForProcessing(ctx context.Context, timeout time.Duration, flowID string, sinkID string) (*models.Message, error) {
-	sourceQueueKey := queueKey(flowID, sinkID, QueueStatusReady)
-	destQueueKey := queueKey(flowID, sinkID, QueueStatusProcessing)
+	sourceQueueKey := queueKey(flowID, sinkID, models.QueueStatusReady)
+	destQueueKey := queueKey(flowID, sinkID, models.QueueStatusProcessing)
 	mIDBytes, err := f.redisStore.BLMove(ctx, timeout, sourceQueueKey, destQueueKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to redis blmove. flow: %s sink: %s", flowID, sinkID)

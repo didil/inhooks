@@ -8,12 +8,13 @@ import (
 )
 
 type AppConfig struct {
-	AppEnv     AppEnv `env:"APP_ENV"`
-	Server     Server
-	Redis      Redis
-	Supervisor Supervisor
-	HTTPClient HTTPClient
-	Sink       Sink
+	AppEnv            AppEnv `env:"APP_ENV"`
+	InhooksConfigFile string `env:"INHOOKS_CONFIG_FILE,default=inhooks.yml"`
+	Server            Server
+	Redis             Redis
+	Supervisor        Supervisor
+	HTTPClient        HTTPClient
+	Sink              Sink
 }
 
 type Server struct {

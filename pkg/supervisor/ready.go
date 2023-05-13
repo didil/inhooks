@@ -35,17 +35,24 @@ func (s *Supervisor) FetchAndProcess(ctx context.Context, f *models.Flow, sink *
 		return nil
 	}
 
-	logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID), zap.String("sinkType", string(sink.Type)), zap.String("messageID", m.ID))
+	logger := s.logger.With(
+		zap.String("flowID", f.ID),
+		zap.String("sinkID", sink.ID),
+		zap.String("sinkType", string(sink.Type)),
+		zap.String("messageID", m.ID),
+		zap.String("ingestedReqID", m.IngestedReqID),
+	)
 
-	logger.Info("processing message")
+	logger.Info("processing message", zap.Int("attempt#", len(m.DeliveryAttempts)+1))
 
 	processingErr := s.messageProcessor.Process(ctx, sink, m)
 	if processingErr != nil {
 		logger.Info("message processing failed")
-		err := s.processingResultsSvc.HandleFailed(ctx, sink, m, processingErr)
+		qStatus, err := s.processingResultsSvc.HandleFailed(ctx, sink, m, processingErr)
 		if err != nil {
 			return errors.Wrapf(err, "could not handle failed processing")
 		}
+		logger.Info("message queued after failure", zap.String("queue", string(qStatus)))
 	} else {
 		logger.Info("message processed ok")
 		err := s.processingResultsSvc.HandleOK(ctx, m)

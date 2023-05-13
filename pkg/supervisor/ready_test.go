@@ -102,7 +102,7 @@ func TestSupervisorFetchAndProcess_Failed(t *testing.T) {
 
 	messageFetcher.EXPECT().GetMessageForProcessing(ctx, appConf.Supervisor.ReadyWaitTime, flowId1, sinkID1).Return(m, nil)
 	messageProcessor.EXPECT().Process(ctx, sink1, m).Return(processingErr)
-	processingResultsService.EXPECT().HandleFailed(ctx, sink1, m, processingErr).Return(nil)
+	processingResultsService.EXPECT().HandleFailed(ctx, sink1, m, processingErr).Return(models.QueueStatusReady, nil)
 
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)

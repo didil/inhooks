@@ -63,5 +63,5 @@ func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m
 }
 
 func (p *messageProcessor) userAgent() string {
-	return fmt.Sprintf("Inhooks/v%s (https://github.com/didil/inhooks)", version.GetVersion())
+	return fmt.Sprintf("Inhooks/%s (https://github.com/didil/inhooks)", version.GetVersion())
 }

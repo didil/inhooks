@@ -27,7 +27,6 @@ type messageEnqueuer struct {
 }
 
 func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) error {
-
 	for _, m := range messages {
 		queueStatus := getQueueStatus(m, e.timeSvc.Now())
 
@@ -40,12 +39,12 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 		qKey := queueKey(m.FlowID, m.SinkID, queueStatus)
 
 		switch queueStatus {
-		case QueueStatusReady:
+		case models.QueueStatusReady:
 			err = e.redisStore.SetAndEnqueue(ctx, mKey, b, qKey, m.ID)
 			if err != nil {
 				return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
 			}
-		case QueueStatusScheduled:
+		case models.QueueStatusScheduled:
 			err = e.redisStore.SetAndZAdd(ctx, mKey, b, qKey, m.ID, float64(m.DeliverAfter.Unix()))
 			if err != nil {
 				return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
@@ -58,13 +57,13 @@ func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Messag
 	return nil
 }
 
-func getQueueStatus(m *models.Message, now time.Time) QueueStatus {
+func getQueueStatus(m *models.Message, now time.Time) models.QueueStatus {
 	if m.DeliverAfter.After(now) {
 		// schedule in the future
-		return QueueStatusScheduled
+		return models.QueueStatusScheduled
 	}
 	// ready to process
-	return QueueStatusReady
+	return models.QueueStatusReady
 }
 
 func flowSinkKeyPrefix(flowID string, sinkID string) string {
@@ -75,16 +74,6 @@ func messageKey(flowID string, sinkID string, messageID string) string {
 	return fmt.Sprintf("%s:m:%s", flowSinkKeyPrefix(flowID, sinkID), messageID)
 }
 
-func queueKey(flowID string, sinkID string, queueStatus QueueStatus) string {
+func queueKey(flowID string, sinkID string, queueStatus models.QueueStatus) string {
 	return fmt.Sprintf("%s:q:%s", flowSinkKeyPrefix(flowID, sinkID), queueStatus)
 }
-
-type QueueStatus string
-
-const (
-	QueueStatusScheduled  QueueStatus = "scheduled"
-	QueueStatusReady      QueueStatus = "ready"
-	QueueStatusProcessing QueueStatus = "processing"
-	QueueStatusDone       QueueStatus = "done"
-	QueueStatusDead       QueueStatus = "dead"
-)
