@@ -41,7 +41,7 @@ func TestProcessingResultsServiceHandleOK(t *testing.T) {
 			{
 				At:     now.Add(-5 * time.Minute),
 				Status: models.DeliveryAttemptStatusFailed,
-				Error:  fmt.Errorf("some error"),
+				Error:  "some error",
 			},
 		},
 	}
@@ -98,7 +98,7 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 			{
 				At:     now.Add(-5 * time.Minute),
 				Status: models.DeliveryAttemptStatusFailed,
-				Error:  fmt.Errorf("some error"),
+				Error:  "some error",
 			},
 		},
 	}
@@ -110,7 +110,7 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	mUpdated.DeliveryAttempts = append(m.DeliveryAttempts, &models.DeliveryAttempt{
 		At:     now,
 		Status: models.DeliveryAttemptStatusFailed,
-		Error:  processingErr,
+		Error:  processingErr.Error(),
 	})
 
 	b, err := json.Marshal(&mUpdated)
@@ -159,7 +159,7 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 			{
 				At:     now.Add(-5 * time.Minute),
 				Status: models.DeliveryAttemptStatusFailed,
-				Error:  fmt.Errorf("some error"),
+				Error:  "some error",
 			},
 		},
 	}
@@ -171,7 +171,7 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 	mUpdated.DeliveryAttempts = append(m.DeliveryAttempts, &models.DeliveryAttempt{
 		At:     now,
 		Status: models.DeliveryAttemptStatusFailed,
-		Error:  processingErr,
+		Error:  processingErr.Error(),
 	})
 
 	b, err := json.Marshal(&mUpdated)
@@ -220,7 +220,7 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 			{
 				At:     now.Add(-5 * time.Minute),
 				Status: models.DeliveryAttemptStatusFailed,
-				Error:  fmt.Errorf("some error"),
+				Error:  "some error",
 			},
 		},
 	}
@@ -232,7 +232,7 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	mUpdated.DeliveryAttempts = append(m.DeliveryAttempts, &models.DeliveryAttempt{
 		At:     now,
 		Status: models.DeliveryAttemptStatusFailed,
-		Error:  processingErr,
+		Error:  processingErr.Error(),
 	})
 
 	b, err := json.Marshal(&mUpdated)

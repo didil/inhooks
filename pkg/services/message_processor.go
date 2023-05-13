@@ -39,7 +39,7 @@ func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sink.URL, buf)
 	if err != nil {
-		return errors.Wrapf(err, "failed to build http request. sink: %s m:%s", sink.ID, m.ID)
+		return errors.Wrapf(err, "failed to build http request")
 	}
 
 	req.Header = m.HttpHeaders
@@ -51,12 +51,12 @@ func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "failed to send http request. sink: %s m:%s", sink.ID, m.ID)
+		return errors.Wrapf(err, "failed to send http request")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return errors.Wrapf(err, "http reponse error %d. sink: %s m:%s", resp.StatusCode, sink.ID, m.ID)
+		return errors.Wrapf(err, "http reponse error %d", resp.StatusCode)
 	}
 
 	return nil

@@ -33,7 +33,7 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 		&models.DeliveryAttempt{
 			At:     now,
 			Status: models.DeliveryAttemptStatusFailed,
-			Error:  processingErr,
+			Error:  processingErr.Error(),
 		},
 	)
 

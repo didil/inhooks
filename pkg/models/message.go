@@ -22,7 +22,7 @@ type Message struct {
 type DeliveryAttempt struct {
 	At     time.Time             `json:"at"`
 	Status DeliveryAttemptStatus `json:"status"`
-	Error  error                 `json:"error"`
+	Error  string                `json:"error"`
 }
 
 type DeliveryAttemptStatus string
