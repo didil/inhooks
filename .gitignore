@@ -70,3 +70,6 @@ bin/
 /inhooks.yml
 .env
 .env.test
+
+# goreleaser build
+dist/
