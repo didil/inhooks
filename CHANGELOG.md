@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/didil/inhooks/compare/v0.1.1...v0.1.2) (2023-05-14)
+
+
+### Features
+
+* extra logging info for queued messages ([bd7bb17](https://github.com/didil/inhooks/commit/bd7bb175500bf3a3253bd1d2a07ab9a9e1067a89))
+
 ## [0.1.1](https://github.com/didil/inhooks/compare/v0.1.0...v0.1.1) (2023-05-14)
 
 
