@@ -119,9 +119,10 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore)
-	requeuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
+	queuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
-	assert.Equal(t, models.QueueStatusDead, requeuedInfo.QueueStatus)
+	assert.Equal(t, mID, queuedInfo.MessageID)
+	assert.Equal(t, models.QueueStatusDead, queuedInfo.QueueStatus)
 }
 
 func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
@@ -181,10 +182,11 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 	redisStore.EXPECT().SetLRemZAdd(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID, float64(mUpdated.DeliverAfter.Unix())).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore)
-	requeuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
+	queuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
-	assert.Equal(t, models.QueueStatusScheduled, requeuedInfo.QueueStatus)
-	assert.Equal(t, mUpdated.DeliverAfter, requeuedInfo.DeliverAfter)
+	assert.Equal(t, mID, queuedInfo.MessageID)
+	assert.Equal(t, models.QueueStatusScheduled, queuedInfo.QueueStatus)
+	assert.Equal(t, mUpdated.DeliverAfter, queuedInfo.DeliverAfter)
 }
 
 func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
@@ -244,8 +246,9 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore)
-	requeuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
+	queuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
-	assert.Equal(t, models.QueueStatusReady, requeuedInfo.QueueStatus)
-	assert.Equal(t, mUpdated.DeliverAfter, requeuedInfo.DeliverAfter)
+	assert.Equal(t, mID, queuedInfo.MessageID)
+	assert.Equal(t, models.QueueStatusReady, queuedInfo.QueueStatus)
+	assert.Equal(t, mUpdated.DeliverAfter, queuedInfo.DeliverAfter)
 }

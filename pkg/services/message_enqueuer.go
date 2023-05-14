@@ -11,7 +11,7 @@ import (
 )
 
 type MessageEnqueuer interface {
-	Enqueue(ctx context.Context, messages []*models.Message) error
+	Enqueue(ctx context.Context, messages []*models.Message) ([]*models.QueuedInfo, error)
 }
 
 func NewMessageEnqueuer(redisStore RedisStore, timeSvc TimeService) MessageEnqueuer {
@@ -26,34 +26,47 @@ type messageEnqueuer struct {
 	timeSvc    TimeService
 }
 
-func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) error {
+func (e *messageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) ([]*models.QueuedInfo, error) {
+	queuedInfos := []*models.QueuedInfo{}
+
 	for _, m := range messages {
 		queueStatus := getQueueStatus(m, e.timeSvc.Now())
 
-		b, err := json.Marshal(&m)
+		err := e.redisEnqueue(ctx, m, queueStatus)
 		if err != nil {
-			return errors.Wrapf(err, "failed to encode message for sink: %s", m.SinkID)
+			return nil, err
 		}
 
-		mKey := messageKey(m.FlowID, m.SinkID, m.ID)
-		qKey := queueKey(m.FlowID, m.SinkID, queueStatus)
-
-		switch queueStatus {
-		case models.QueueStatusReady:
-			err = e.redisStore.SetAndEnqueue(ctx, mKey, b, qKey, m.ID)
-			if err != nil {
-				return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
-			}
-		case models.QueueStatusScheduled:
-			err = e.redisStore.SetAndZAdd(ctx, mKey, b, qKey, m.ID, float64(m.DeliverAfter.Unix()))
-			if err != nil {
-				return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
-			}
-		default:
-			return fmt.Errorf("unexpected queue status %s", queueStatus)
-		}
-
+		queuedInfos = append(queuedInfos, &models.QueuedInfo{MessageID: m.ID, QueueStatus: queueStatus, DeliverAfter: m.DeliverAfter})
 	}
+
+	return queuedInfos, nil
+}
+
+func (e *messageEnqueuer) redisEnqueue(ctx context.Context, m *models.Message, queueStatus models.QueueStatus) error {
+	b, err := json.Marshal(&m)
+	if err != nil {
+		return errors.Wrapf(err, "failed to encode message for sink: %s", m.SinkID)
+	}
+
+	mKey := messageKey(m.FlowID, m.SinkID, m.ID)
+	qKey := queueKey(m.FlowID, m.SinkID, queueStatus)
+
+	switch queueStatus {
+	case models.QueueStatusReady:
+		err = e.redisStore.SetAndEnqueue(ctx, mKey, b, qKey, m.ID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
+		}
+	case models.QueueStatusScheduled:
+		err = e.redisStore.SetAndZAdd(ctx, mKey, b, qKey, m.ID, float64(m.DeliverAfter.Unix()))
+		if err != nil {
+			return errors.Wrapf(err, "failed to set and enqueue message for sink: %s", m.SinkID)
+		}
+	default:
+		return fmt.Errorf("unexpected queue status %s", queueStatus)
+	}
+
 	return nil
 }
 

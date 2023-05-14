@@ -2,7 +2,8 @@ package models
 
 import "time"
 
-type RequeuedInfo struct {
+type QueuedInfo struct {
+	MessageID    string
 	QueueStatus  QueueStatus
 	DeliverAfter time.Time
 }

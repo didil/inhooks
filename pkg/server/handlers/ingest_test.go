@@ -53,8 +53,11 @@ func TestUpdateLB(t *testing.T) {
 	}
 
 	messageBuilder.EXPECT().FromHttp(flow, gomock.AssignableToTypeOf(&http.Request{}), gomock.AssignableToTypeOf("")).Return(messages, nil)
-
-	messageEnqueuer.EXPECT().Enqueue(gomock.Any(), messages).Return(nil)
+	queuedInfos := []*models.QueuedInfo{
+		{MessageID: messages[0].ID, QueueStatus: models.QueueStatusReady},
+		{MessageID: messages[1].ID, QueueStatus: models.QueueStatusReady},
+	}
+	messageEnqueuer.EXPECT().Enqueue(gomock.Any(), messages).Return(queuedInfos, nil)
 
 	buf := bytes.NewBufferString(`{"id": "abc"}`)
 
