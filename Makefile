@@ -8,8 +8,12 @@ install-tools:
 install:
 	@echo MYGOBIN: $(MYGOBIN)
     GOBIN=$(MYGOBIN) go install ./...
+
 test:
 	go test -race ./...
+
+test-coverage:
+	go test -race -covermode atomic -coverprofile=coverprofile.txt ./...
 
 lint:
 	$(MYGOBIN)/golangci-lint run

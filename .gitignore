@@ -73,3 +73,6 @@ bin/
 
 # goreleaser build
 dist/
+
+# go -coverprofile
+coverprofile.txt
