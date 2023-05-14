@@ -36,10 +36,10 @@ func (m *MockProcessingResultsService) EXPECT() *MockProcessingResultsServiceMoc
 }
 
 // HandleFailed mocks base method.
-func (m_2 *MockProcessingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (models.QueueStatus, error) {
+func (m_2 *MockProcessingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.RequeuedInfo, error) {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "HandleFailed", ctx, sink, m, processingErr)
-	ret0, _ := ret[0].(models.QueueStatus)
+	ret0, _ := ret[0].(*models.RequeuedInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
