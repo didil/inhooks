@@ -288,3 +288,87 @@ func (s *RedisStoreSuite) TestSetLRemZAdd() {
 
 	s.Equal(string(value1), val)
 }
+
+func (s *RedisStoreSuite) TestZRangeBelowScore() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	now := time.Date(2023, 05, 5, 8, 9, 24, 0, time.UTC)
+
+	queueKey := "q:scheduled"
+	queueKeyWithPrefix := fmt.Sprintf("%s:%s", prefix, queueKey)
+
+	m1ID := "message-1"
+	m2ID := "message-2"
+	m3ID := "message-3"
+	m4ID := "message-4"
+
+	_, err := s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: float64(now.Unix()), Member: m1ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: float64(now.Add(5 * time.Minute).Unix()), Member: m2ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: float64(now.Add(-5 * time.Minute).Unix()), Member: m3ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: float64(now.Add(20 * time.Minute).Unix()), Member: m4ID}).Result()
+	s.NoError(err)
+
+	vals, err := s.redisStore.ZRangeBelowScore(ctx, queueKey, float64(now.Unix()))
+	s.NoError(err)
+
+	s.Equal([]string{"message-3", "message-1"}, vals)
+}
+
+func (s *RedisStoreSuite) TestZRemRpush() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	now := time.Date(2023, 05, 5, 8, 9, 24, 0, time.UTC)
+
+	sourceQueueKey := "q:scheduled"
+	sourceQueueKeyWithPrefix := fmt.Sprintf("%s:%s", prefix, sourceQueueKey)
+
+	destQueueKey := "q:ready"
+	destQueueKeyWithPrefix := fmt.Sprintf("%s:%s", prefix, destQueueKey)
+
+	m1ID := "message-1"
+	m2ID := "message-2"
+	m3ID := "message-3"
+	m4ID := "message-4"
+
+	_, err := s.client.ZAdd(ctx, sourceQueueKeyWithPrefix, redis.Z{Score: float64(now.Unix()), Member: m1ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, sourceQueueKeyWithPrefix, redis.Z{Score: float64(now.Add(5 * time.Minute).Unix()), Member: m2ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, sourceQueueKeyWithPrefix, redis.Z{Score: float64(now.Add(-5 * time.Minute).Unix()), Member: m3ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, sourceQueueKeyWithPrefix, redis.Z{Score: float64(now.Add(20 * time.Minute).Unix()), Member: m4ID}).Result()
+	s.NoError(err)
+
+	mIDs := []string{"message-3", "message-1"}
+
+	err = s.redisStore.ZRemRpush(ctx, mIDs, sourceQueueKey, destQueueKey)
+	s.NoError(err)
+
+	queueResults, err := s.client.ZRange(ctx, sourceQueueKeyWithPrefix, 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"message-2", "message-4"}, queueResults)
+
+	queueResults, err = s.client.LRange(ctx, destQueueKeyWithPrefix, 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"message-3", "message-1"}, queueResults)
+
+}

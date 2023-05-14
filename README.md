@@ -32,11 +32,11 @@ flows:
       - id: sink-1
         type: http
         url: https://example.com/target
-        delay: 30s # delay processing by 30 seconds
+        delay: 90s # delay processing by 90 seconds
       - id: sink-2
         type: http
         url: https://example.com/othertarget
-        retryAfter: 2m # on error, retry after 2 minutes
+        retryAfter: 5m # on error, retry after 5 minutes
         maxAttemps: 10 # maximum number of attempts
 ```
 

@@ -92,6 +92,7 @@ func main() {
 
 	messageProcessor := services.NewMessageProcessor(httpClient)
 	processingResultsService := services.NewProcessingResultsService(timeSvc, redisStore)
+	schedulerService := services.NewSchedulerService(redisStore, timeSvc)
 
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
@@ -100,6 +101,7 @@ func main() {
 		supervisor.WithInhooksConfigService(inhooksConfigSvc),
 		supervisor.WithMessageProcessor(messageProcessor),
 		supervisor.WithProcessingResultsService(processingResultsService),
+		supervisor.WithSchedulerService(schedulerService),
 	)
 
 	go func() {
