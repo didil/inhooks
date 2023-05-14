@@ -6,20 +6,33 @@ permissions:
 
 on: [push, pull_request]
 jobs:
-  build_app:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.20.x"
 
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.5.0
+      - name: Set go cache paths
+        id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+
+      - uses: actions/checkout@v3
+
+      - name: Go Build Cache
+        uses: actions/cache@v3
         with:
-          redis-version: 6.2.6
+          path: ${{ steps.go-cache-paths.outputs.go-build }}
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Go Mod Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
       - name: Install tools
         run: make install-tools
@@ -29,6 +42,11 @@ jobs:
 
       - name: Lint
         run: make lint
+
+      - name: Start Redis
+        uses: supercharge/redis-github-action@1.5.0
+        with:
+          redis-version: 6.2.6
 
       - name: Test
         env:
@@ -54,11 +72,32 @@ jobs:
     needs: [build, release-please]
     if: needs.release-please.outputs.release_created
     steps:
-      - uses: actions/checkout@v3
-      - run: git fetch --force --tags
       - uses: actions/setup-go@v4
         with:
           go-version: "1.20"
+
+      - name: Set go cache paths
+        id: go-cache-paths
+        run: |
+          echo "::set-output name=go-build::$(go env GOCACHE)"
+          echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Go Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.go-cache-paths.outputs.go-build }}
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+
+      - name: Go Mod Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
