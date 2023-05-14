@@ -1,0 +1,25 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: "inhooks"
+    binary: "inhooks"
+    main: ./cmd/api/main.go
+    goos:
+      - linux
+      - darwin
+      - windows
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+
+    files:
+      - LICENSE
+      - README.md
+
+    rlcp: true

@@ -23,3 +23,6 @@ run-dev:
 .PHONY: gen-mocks
 gen-mocks:
 	pkg/testsupport/mocks/gen_mocks.sh
+
+goreleaser-snapshot:
+	goreleaser --snapshot --clean
