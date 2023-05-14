@@ -54,6 +54,19 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 	assert.NoError(t, ValidateInhooksConfig(appConf, c))
 }
 
+func TestValidateInhooksConfig_NoFlows(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{},
+	}
+
+	err = ValidateInhooksConfig(appConf, c)
+	assert.ErrorContains(t, err, "no flows defined")
+}
+
 func TestValidateInhooksConfig_MissingID(t *testing.T) {
 	ctx := context.Background()
 	appConf, err := testsupport.InitAppConfig(ctx)
@@ -80,6 +93,49 @@ func TestValidateInhooksConfig_MissingID(t *testing.T) {
 	}
 
 	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "field flows[0].id can only contain upper case or lower case letters, digits or hyphens. min length: 1. max length: 255")
+}
+
+func TestValidateInhooksConfig_DuplicateFlowIDs(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+					},
+				},
+			},
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-2",
+					Slug: "source-2-slug",
+					Type: "http",
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-2",
+						Type: "http",
+						URL:  "https://example.com/sink",
+					},
+				},
+			},
+		},
+	}
+
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "flow ids must be unique")
 }
 
 func TestValidateInhooksConfig_DuplicateSlug(t *testing.T) {

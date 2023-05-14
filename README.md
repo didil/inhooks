@@ -1,6 +1,6 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 ![CI](https://github.com/didil/inhooks/actions/workflows/ci.yml/badge.svg)
-
+[![Coverage Status](https://coveralls.io/repos/github/didil/inhooks/badge.svg?branch=main)](https://coveralls.io/github/didil/inhooks?branch=main)
 
 # Inhooks
 Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in Go and runnable as a single binary or docker container. Only requires a redis database for storage/queueing.

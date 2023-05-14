@@ -37,6 +37,9 @@ jobs:
       - name: Install tools
         run: make install-tools
 
+      - name: Install goveralls
+        run: go install github.com/mattn/goveralls@latest
+
       - name: Build
         run: GOFLAGS=-v make build
 
@@ -55,7 +58,12 @@ jobs:
           HOST: localhost
           PORT: 3001
           REDIS_URL: "redis://localhost:6379"
-        run: GOFLAGS=-v make test
+        run: GOFLAGS=-v make test-coverage
+
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: goveralls -coverprofile=coverprofile.txt -service=github
 
   release-please:
     runs-on: ubuntu-latest
