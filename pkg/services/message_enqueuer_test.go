@@ -68,6 +68,13 @@ func TestMessageEnqueuer(t *testing.T) {
 		Times(1).
 		Return(nil)
 
-	err = messageEnqueuer.Enqueue(ctx, []*models.Message{m1, m2})
+	queuedInfos, err := messageEnqueuer.Enqueue(ctx, []*models.Message{m1, m2})
 	assert.NoError(t, err)
+
+	expectedInfos := []*models.QueuedInfo{
+		{MessageID: m1ID, QueueStatus: models.QueueStatusReady, DeliverAfter: m1.DeliverAfter},
+		{MessageID: m2ID, QueueStatus: models.QueueStatusScheduled, DeliverAfter: m2.DeliverAfter},
+	}
+
+	assert.Equal(t, expectedInfos, queuedInfos)
 }

@@ -11,7 +11,7 @@ import (
 )
 
 type ProcessingResultsService interface {
-	HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.RequeuedInfo, error)
+	HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.QueuedInfo, error)
 	HandleOK(ctx context.Context, m *models.Message) error
 }
 
@@ -27,7 +27,7 @@ func NewProcessingResultsService(timeSvc TimeService, redisStore RedisStore) Pro
 	}
 }
 
-func (s *processingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.RequeuedInfo, error) {
+func (s *processingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.QueuedInfo, error) {
 	now := s.timeSvc.Now()
 	m.DeliveryAttempts = append(m.DeliveryAttempts,
 		&models.DeliveryAttempt{
@@ -68,7 +68,7 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 			return nil, errors.Wrapf(err, "failed to set and move to dead")
 		}
 
-		return &models.RequeuedInfo{QueueStatus: models.QueueStatusDead}, nil
+		return &models.QueuedInfo{MessageID: m.ID, QueueStatus: models.QueueStatusDead, DeliverAfter: m.DeliverAfter}, nil
 	}
 
 	queueStatus := getQueueStatus(m, now)
@@ -89,7 +89,7 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 		return nil, fmt.Errorf("unexpected queue status %s", queueStatus)
 	}
 
-	return &models.RequeuedInfo{QueueStatus: queueStatus, DeliverAfter: m.DeliverAfter}, nil
+	return &models.QueuedInfo{MessageID: m.ID, QueueStatus: queueStatus, DeliverAfter: m.DeliverAfter}, nil
 }
 
 func (s *processingResultsService) HandleOK(ctx context.Context, m *models.Message) error {

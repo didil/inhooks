@@ -48,11 +48,11 @@ func (s *Supervisor) FetchAndProcess(ctx context.Context, f *models.Flow, sink *
 	processingErr := s.messageProcessor.Process(ctx, sink, m)
 	if processingErr != nil {
 		logger.Info("message processing failed")
-		requeuedInfo, err := s.processingResultsSvc.HandleFailed(ctx, sink, m, processingErr)
+		queuedInfo, err := s.processingResultsSvc.HandleFailed(ctx, sink, m, processingErr)
 		if err != nil {
 			return errors.Wrapf(err, "could not handle failed processing")
 		}
-		logger.Info("message queued after failure", zap.String("queue", string(requeuedInfo.QueueStatus)), zap.Time("nextAttemptAfter", requeuedInfo.DeliverAfter))
+		logger.Info("message queued after failure", zap.String("queue", string(queuedInfo.QueueStatus)), zap.Time("nextAttemptAfter", queuedInfo.DeliverAfter))
 	} else {
 		logger.Info("message processed ok")
 		err := s.processingResultsSvc.HandleOK(ctx, m)

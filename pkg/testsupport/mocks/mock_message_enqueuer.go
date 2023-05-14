@@ -36,11 +36,12 @@ func (m *MockMessageEnqueuer) EXPECT() *MockMessageEnqueuerMockRecorder {
 }
 
 // Enqueue mocks base method.
-func (m *MockMessageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) error {
+func (m *MockMessageEnqueuer) Enqueue(ctx context.Context, messages []*models.Message) ([]*models.QueuedInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Enqueue", ctx, messages)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].([]*models.QueuedInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Enqueue indicates an expected call of Enqueue.
