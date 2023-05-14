@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/didil/inhooks/compare/v0.1.0...v0.1.1) (2023-05-14)
+
+
+### Features
+
+* log next retry time when requeuing failed message ([aae9ea3](https://github.com/didil/inhooks/commit/aae9ea3641c249bf27d571d2c28b96506f00914c))
+
 ## 0.1.0 (2023-05-14)
 
 
