@@ -77,4 +77,5 @@ func (s *processingRecoveryService) MoveProcessingToReady(ctx context.Context, f
 // only used for testing
 func (s *processingRecoveryService) AddToCache(mID string, ttl time.Duration) {
 	s.cache.SetWithTTL(mID, recoveryCacheDummyValue, 1, ttl)
+	s.cache.Wait()
 }
