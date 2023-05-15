@@ -14,7 +14,7 @@ func (s *Supervisor) HandleReadyQueue(ctx context.Context, f *models.Flow, sink 
 
 	for {
 		err := s.FetchAndProcess(ctx, f, sink)
-		if err != nil && err != context.Canceled {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("failed to fetch and processed", zap.Error(err))
 			// wait before retrying
 			timer := time.NewTimer(s.appConf.Supervisor.ErrSleepTime)
