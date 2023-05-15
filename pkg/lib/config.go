@@ -40,9 +40,11 @@ type HTTPClientConfig struct {
 }
 
 type SinkConfig struct {
-	DefaultDelay       time.Duration `env:"SINK_DEFAULT_DELAY,default=0"`
-	DefaultMaxAttempts int           `env:"SINK_DEFAULT_MAX_ATTEMPTS,default=3"`
-	DefaultRetryAfter  time.Duration `env:"SINK_DEFAULT_RETRY_AFTER,default=0"`
+	DefaultDelay         time.Duration `env:"SINK_DEFAULT_DELAY,default=0"`
+	DefaultMaxAttempts   int           `env:"SINK_DEFAULT_MAX_ATTEMPTS,default=3"`
+	DefaultRetryInterval time.Duration `env:"SINK_DEFAULT_RETRY_AFTER,default=0"`
+	// default retry exponential mutiplier is 1 (constant backoff)
+	DefaultRetryExpMultiplier float64 `env:"SINK_DEFAULT_RETRY_EXP_MULTIPLIER,default=1"`
 }
 
 func InitAppConfig(ctx context.Context) (*AppConfig, error) {

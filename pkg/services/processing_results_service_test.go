@@ -21,6 +21,7 @@ func TestProcessingResultsServiceHandleOK(t *testing.T) {
 
 	redisStore := mocks.NewMockRedisStore(ctrl)
 	timeSvc := mocks.NewMockTimeService(ctrl)
+	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
 	timeSvc.EXPECT().Now().Return(now)
@@ -57,7 +58,7 @@ func TestProcessingResultsServiceHandleOK(t *testing.T) {
 
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
 
-	s := NewProcessingResultsService(timeSvc, redisStore)
+	s := NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
 	err = s.HandleOK(ctx, m)
 	assert.NoError(t, err)
 }
@@ -70,6 +71,7 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 
 	redisStore := mocks.NewMockRedisStore(ctrl)
 	timeSvc := mocks.NewMockTimeService(ctrl)
+	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
 	timeSvc.EXPECT().Now().Return(now)
@@ -82,12 +84,14 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	sourceQueueKey := "f:flow-1:s:sink-1:q:processing"
 	destQueueKey := "f:flow-1:s:sink-1:q:dead"
 
-	retryAfter := 3 * time.Minute
-	maxAttempts := 2
+	retryInterval := 15 * time.Minute
+	retryExpMultiplier := float64(1)
+	maxAttempts := 3
 	sink := &models.Sink{
-		ID:          sinkID,
-		RetryAfter:  &retryAfter,
-		MaxAttempts: &maxAttempts,
+		ID:                 sinkID,
+		RetryInterval:      &retryInterval,
+		RetryExpMultiplier: &retryExpMultiplier,
+		MaxAttempts:        &maxAttempts,
 	}
 
 	m := &models.Message{
@@ -96,9 +100,14 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 		SinkID: sinkID,
 		DeliveryAttempts: []*models.DeliveryAttempt{
 			{
-				At:     now.Add(-5 * time.Minute),
+				At:     now.Add(-10 * time.Minute),
 				Status: models.DeliveryAttemptStatusFailed,
 				Error:  "some error",
+			},
+			{
+				At:     now.Add(-5 * time.Minute),
+				Status: models.DeliveryAttemptStatusFailed,
+				Error:  "other error",
 			},
 		},
 	}
@@ -106,7 +115,7 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	processingErr := fmt.Errorf("new error")
 
 	mUpdated := *m
-	mUpdated.DeliverAfter = now.Add(retryAfter)
+	mUpdated.DeliverAfter = now.Add(retryInterval)
 	mUpdated.DeliveryAttempts = append(m.DeliveryAttempts, &models.DeliveryAttempt{
 		At:     now,
 		Status: models.DeliveryAttemptStatusFailed,
@@ -117,8 +126,9 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	assert.NoError(t, err)
 
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
+	retryCalculator.EXPECT().NextAttemptInterval(len(m.DeliveryAttempts)+1, &retryInterval, &retryExpMultiplier).Return(retryInterval)
 
-	s := NewProcessingResultsService(timeSvc, redisStore)
+	s := NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
 	queuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
 	assert.Equal(t, mID, queuedInfo.MessageID)
@@ -133,6 +143,7 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 
 	redisStore := mocks.NewMockRedisStore(ctrl)
 	timeSvc := mocks.NewMockTimeService(ctrl)
+	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
 	timeSvc.EXPECT().Now().Return(now)
@@ -145,12 +156,15 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 	sourceQueueKey := "f:flow-1:s:sink-1:q:processing"
 	destQueueKey := "f:flow-1:s:sink-1:q:scheduled"
 
-	retryAfter := 3 * time.Minute
+	retryInterval := 4 * time.Second
+	retryExpMultiplier := float64(2)
 	maxAttempts := 3
+
 	sink := &models.Sink{
-		ID:          sinkID,
-		RetryAfter:  &retryAfter,
-		MaxAttempts: &maxAttempts,
+		ID:                 sinkID,
+		RetryInterval:      &retryInterval,
+		RetryExpMultiplier: &retryExpMultiplier,
+		MaxAttempts:        &maxAttempts,
 	}
 
 	m := &models.Message{
@@ -166,10 +180,12 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 		},
 	}
 
+	nextAttemptInterval := 8 * time.Second
+
 	processingErr := fmt.Errorf("new error")
 
 	mUpdated := *m
-	mUpdated.DeliverAfter = now.Add(retryAfter)
+	mUpdated.DeliverAfter = now.Add(nextAttemptInterval)
 	mUpdated.DeliveryAttempts = append(m.DeliveryAttempts, &models.DeliveryAttempt{
 		At:     now,
 		Status: models.DeliveryAttemptStatusFailed,
@@ -180,8 +196,9 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 	assert.NoError(t, err)
 
 	redisStore.EXPECT().SetLRemZAdd(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID, float64(mUpdated.DeliverAfter.Unix())).Return(nil)
+	retryCalculator.EXPECT().NextAttemptInterval(len(m.DeliveryAttempts)+1, &retryInterval, &retryExpMultiplier).Return(nextAttemptInterval)
 
-	s := NewProcessingResultsService(timeSvc, redisStore)
+	s := NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
 	queuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
 	assert.Equal(t, mID, queuedInfo.MessageID)
@@ -197,6 +214,7 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 
 	redisStore := mocks.NewMockRedisStore(ctrl)
 	timeSvc := mocks.NewMockTimeService(ctrl)
+	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
 	timeSvc.EXPECT().Now().Return(now)
@@ -209,13 +227,16 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	sourceQueueKey := "f:flow-1:s:sink-1:q:processing"
 	destQueueKey := "f:flow-1:s:sink-1:q:ready"
 
-	retryAfter := 0 * time.Second
+	retryInterval := 0 * time.Second
+	retryExpMultiplier := float64(1)
 	maxAttempts := 3
 	sink := &models.Sink{
-		ID:          sinkID,
-		RetryAfter:  &retryAfter,
-		MaxAttempts: &maxAttempts,
+		ID:                 sinkID,
+		RetryInterval:      &retryInterval,
+		RetryExpMultiplier: &retryExpMultiplier,
+		MaxAttempts:        &maxAttempts,
 	}
+	nextAttemptInterval := 0 * time.Second
 
 	m := &models.Message{
 		ID:     mID,
@@ -233,7 +254,7 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	processingErr := fmt.Errorf("new error")
 
 	mUpdated := *m
-	mUpdated.DeliverAfter = now.Add(retryAfter)
+	mUpdated.DeliverAfter = now.Add(retryInterval)
 	mUpdated.DeliveryAttempts = append(m.DeliveryAttempts, &models.DeliveryAttempt{
 		At:     now,
 		Status: models.DeliveryAttemptStatusFailed,
@@ -244,8 +265,9 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	assert.NoError(t, err)
 
 	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
+	retryCalculator.EXPECT().NextAttemptInterval(len(m.DeliveryAttempts)+1, &retryInterval, &retryExpMultiplier).Return(nextAttemptInterval)
 
-	s := NewProcessingResultsService(timeSvc, redisStore)
+	s := NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
 	queuedInfo, err := s.HandleFailed(ctx, sink, m, processingErr)
 	assert.NoError(t, err)
 	assert.Equal(t, mID, queuedInfo.MessageID)

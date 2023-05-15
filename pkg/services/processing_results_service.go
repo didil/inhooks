@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/pkg/errors"
@@ -16,14 +15,16 @@ type ProcessingResultsService interface {
 }
 
 type processingResultsService struct {
-	timeSvc    TimeService
-	redisStore RedisStore
+	timeSvc         TimeService
+	redisStore      RedisStore
+	retryCalculator RetryCalculator
 }
 
-func NewProcessingResultsService(timeSvc TimeService, redisStore RedisStore) ProcessingResultsService {
+func NewProcessingResultsService(timeSvc TimeService, redisStore RedisStore, retryCalculator RetryCalculator) ProcessingResultsService {
 	return &processingResultsService{
-		timeSvc:    timeSvc,
-		redisStore: redisStore,
+		timeSvc:         timeSvc,
+		redisStore:      redisStore,
+		retryCalculator: retryCalculator,
 	}
 }
 
@@ -37,13 +38,8 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 		},
 	)
 
-	var retryAfter time.Duration
-	if sink.RetryAfter == nil {
-		retryAfter = 0
-	} else {
-		retryAfter = *sink.RetryAfter
-	}
-	m.DeliverAfter = now.Add(retryAfter)
+	nextAttemptInterval := s.retryCalculator.NextAttemptInterval(len(m.DeliveryAttempts), sink.RetryInterval, sink.RetryExpMultiplier)
+	m.DeliverAfter = now.Add(nextAttemptInterval)
 
 	var maxAttempts int
 	if sink.MaxAttempts == nil {
