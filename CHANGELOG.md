@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/didil/inhooks/compare/v0.1.2...v0.1.3) (2023-05-15)
+
+
+### Features
+
+* exponential retries ([#31](https://github.com/didil/inhooks/issues/31)) ([2f8ff7f](https://github.com/didil/inhooks/commit/2f8ff7fd04cc7d9096145a15f6969257c2cc5ae4))
+
 ## [0.1.2](https://github.com/didil/inhooks/compare/v0.1.1...v0.1.2) (2023-05-14)
 
 
