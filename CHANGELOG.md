@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/didil/inhooks/compare/v0.1.3...v0.1.4) (2023-05-15)
+
+
+### Features
+
+* cleanup done queue ([#37](https://github.com/didil/inhooks/issues/37)) ([e5e62c1](https://github.com/didil/inhooks/commit/e5e62c129e6bb63960f5593126b5b754b37e0379))
+
 ## [0.1.3](https://github.com/didil/inhooks/compare/v0.1.2...v0.1.3) (2023-05-15)
 
 
