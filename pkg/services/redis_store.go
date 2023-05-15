@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -22,6 +23,8 @@ type RedisStore interface {
 	ZRemRpush(ctx context.Context, messageIDs []string, sourceQueueKey string, destQueueKey string) error
 	LRangeAll(ctx context.Context, queueKey string) ([]string, error)
 	LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error
+	ZRemRangeBelowScore(ctx context.Context, queueKey string, maxScore int) (int, error)
+	ZRemDel(ctx context.Context, queueKey string, messageIDs []string, messageKeys []string) error
 }
 
 type redisStore struct {
@@ -244,6 +247,39 @@ func (s *redisStore) LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey
 		pipe.LRem(ctx, sourceKeyWithPrefix, 0, messageID)
 		pipe.RPush(ctx, destKeyWithPrefix, messageID)
 	}
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *redisStore) ZRemRangeBelowScore(ctx context.Context, queueKey string, maxScore int) (int, error) {
+	queueKeyWithPrefix := s.keyWithPrefix(queueKey)
+
+	count, err := s.client.ZRemRangeByScore(ctx, queueKeyWithPrefix, "-inf", strconv.Itoa(maxScore)).Result()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to zremrangebyscore. queueKey: %s", queueKeyWithPrefix)
+	}
+
+	return int(count), nil
+}
+
+func (s *redisStore) ZRemDel(ctx context.Context, queueKey string, messageIDs []string, messageKeys []string) error {
+	pipe := s.client.TxPipeline()
+
+	queueKeyWithPrefix := s.keyWithPrefix(queueKey)
+	pipe.ZRem(ctx, queueKeyWithPrefix, messageIDs)
+
+	messageKeysWithPrefix := []string{}
+	for _, messageKey := range messageKeys {
+		messageKeyWithPrefix := s.keyWithPrefix(messageKey)
+		messageKeysWithPrefix = append(messageKeysWithPrefix, messageKeyWithPrefix)
+	}
+
+	pipe.Del(ctx, messageKeysWithPrefix...)
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {

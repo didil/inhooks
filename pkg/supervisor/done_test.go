@@ -13,11 +13,13 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestSupervisorHandleProcessingQueue(t *testing.T) {
+func TestSupervisor_HandleDoneQueue(t *testing.T) {
 	appConf, err := testsupport.InitAppConfig(context.Background())
 	assert.NoError(t, err)
 
-	appConf.Supervisor.ErrSleepTime = 0
+	appConf.Supervisor.DoneQueueCleanupInterval = 45 * time.Second
+	appConf.Supervisor.DoneQueueCleanupDelay = 5 * time.Hour
+	appConf.Supervisor.DoneQueueCleanupEnabled = true
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -34,24 +36,26 @@ func TestSupervisorHandleProcessingQueue(t *testing.T) {
 		Sinks: []*models.Sink{sink1},
 	}
 
-	processingRecoverySvc := mocks.NewMockProcessingRecoveryService(ctrl)
-	movedMessageIds := []string{"message-1", "message-2"}
+	cleanupSvc := mocks.NewMockCleanupService(ctrl)
 
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)
 
 	s := NewSupervisor(
-		WithProcessingRecoveryService(processingRecoverySvc),
+		WithCleanupService(cleanupSvc),
 		WithAppConfig(appConf),
 		WithLogger(logger),
 	)
 
-	processingRecoverySvc.EXPECT().MoveProcessingToReady(gomock.Any(), flow1, sink1, 2*appConf.Supervisor.ProcessingRecoveryInterval).
-		DoAndReturn(func(ctx context.Context, flow *models.Flow, sink *models.Sink, processingRecoveryInterval time.Duration) ([]string, error) {
+	count := 2
+	cleanupSvc.EXPECT().
+		CleanupDoneQueue(gomock.Any(), flow1, sink1, appConf.Supervisor.DoneQueueCleanupDelay).
+		DoAndReturn(func(ctx context.Context, f *models.Flow, sink *models.Sink, doneQueueCleanupDelay time.Duration) (int, error) {
 			s.Shutdown()
-			return movedMessageIds, nil
-		}).
-		Return(movedMessageIds, nil)
 
-	s.HandleProcessingQueue(flow1, sink1)
+			return count, nil
+		})
+
+	s.HandleDoneQueue(flow1, sink1)
+
 }

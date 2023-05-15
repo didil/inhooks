@@ -12,10 +12,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestSupervisorMoveDueScheduled(t *testing.T) {
-	ctx := context.Background()
-
-	appConf, err := testsupport.InitAppConfig(ctx)
+func TestSupervisor_HandleScheduledQueue(t *testing.T) {
+	appConf, err := testsupport.InitAppConfig(context.Background())
 	assert.NoError(t, err)
 
 	appConf.Supervisor.ErrSleepTime = 0
@@ -37,8 +35,6 @@ func TestSupervisorMoveDueScheduled(t *testing.T) {
 
 	schedulerSvc := mocks.NewMockSchedulerService(ctrl)
 
-	schedulerSvc.EXPECT().MoveDueScheduled(ctx, flow1, sink1)
-
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)
 
@@ -48,6 +44,11 @@ func TestSupervisorMoveDueScheduled(t *testing.T) {
 		WithLogger(logger),
 	)
 
-	err = s.MoveDueScheduled(ctx, flow1, sink1)
-	assert.NoError(t, err)
+	schedulerSvc.EXPECT().MoveDueScheduled(gomock.Any(), flow1, sink1).
+		Do(func(ctx context.Context, f *models.Flow, sink *models.Sink) error {
+			s.Shutdown()
+			return nil
+		})
+
+	s.HandleScheduledQueue(flow1, sink1)
 }
