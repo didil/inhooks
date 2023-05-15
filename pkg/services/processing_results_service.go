@@ -29,17 +29,16 @@ func NewProcessingResultsService(timeSvc TimeService, redisStore RedisStore, ret
 }
 
 func (s *processingResultsService) HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.QueuedInfo, error) {
-	now := s.timeSvc.Now()
 	m.DeliveryAttempts = append(m.DeliveryAttempts,
 		&models.DeliveryAttempt{
-			At:     now,
+			At:     s.timeSvc.Now(),
 			Status: models.DeliveryAttemptStatusFailed,
 			Error:  processingErr.Error(),
 		},
 	)
 
 	nextAttemptInterval := s.retryCalculator.NextAttemptInterval(len(m.DeliveryAttempts), sink.RetryInterval, sink.RetryExpMultiplier)
-	m.DeliverAfter = now.Add(nextAttemptInterval)
+	m.DeliverAfter = s.timeSvc.Now().Add(nextAttemptInterval)
 
 	var maxAttempts int
 	if sink.MaxAttempts == nil {
@@ -67,7 +66,7 @@ func (s *processingResultsService) HandleFailed(ctx context.Context, sink *model
 		return &models.QueuedInfo{MessageID: m.ID, QueueStatus: models.QueueStatusDead, DeliverAfter: m.DeliverAfter}, nil
 	}
 
-	queueStatus := getQueueStatus(m, now)
+	queueStatus := getQueueStatus(m, s.timeSvc.Now())
 	destQueueKey := queueKey(m.FlowID, m.SinkID, queueStatus)
 
 	switch queueStatus {
@@ -106,7 +105,7 @@ func (s *processingResultsService) HandleOK(ctx context.Context, m *models.Messa
 	}
 
 	// update message and move to done
-	err = s.redisStore.SetAndMove(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID)
+	err = s.redisStore.SetLRemZAdd(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID, float64(s.timeSvc.Now().Unix()))
 	if err != nil {
 		return errors.Wrapf(err, "failed to set and move to done")
 	}

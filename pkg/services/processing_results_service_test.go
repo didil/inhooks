@@ -24,7 +24,7 @@ func TestProcessingResultsServiceHandleOK(t *testing.T) {
 	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
-	timeSvc.EXPECT().Now().Return(now)
+	timeSvc.EXPECT().Now().AnyTimes().Return(now)
 
 	flowID := "flow-1"
 	sinkID := "sink-1"
@@ -56,7 +56,7 @@ func TestProcessingResultsServiceHandleOK(t *testing.T) {
 	b, err := json.Marshal(&mUpdated)
 	assert.NoError(t, err)
 
-	redisStore.EXPECT().SetAndMove(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID).Return(nil)
+	redisStore.EXPECT().SetLRemZAdd(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID, float64(now.Unix())).Return(nil)
 
 	s := NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
 	err = s.HandleOK(ctx, m)
@@ -74,7 +74,7 @@ func TestProcessingResultsServiceHandleFailed_Dead(t *testing.T) {
 	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
-	timeSvc.EXPECT().Now().Return(now)
+	timeSvc.EXPECT().Now().AnyTimes().Return(now)
 
 	flowID := "flow-1"
 	sinkID := "sink-1"
@@ -146,7 +146,7 @@ func TestProcessingResultsServiceHandleFailed_Scheduled(t *testing.T) {
 	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
-	timeSvc.EXPECT().Now().Return(now)
+	timeSvc.EXPECT().Now().AnyTimes().Return(now)
 
 	flowID := "flow-1"
 	sinkID := "sink-1"
@@ -217,7 +217,7 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
 
 	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
-	timeSvc.EXPECT().Now().Return(now)
+	timeSvc.EXPECT().Now().AnyTimes().Return(now)
 
 	flowID := "flow-1"
 	sinkID := "sink-1"
