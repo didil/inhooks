@@ -67,7 +67,6 @@ func main() {
 
 	app := handlers.NewApp(
 		handlers.WithLogger(logger),
-		handlers.WithAppConfig(appConf),
 		handlers.WithInhooksConfigService(inhooksConfigSvc),
 		handlers.WithMessageBuilder(messageBuilder),
 		handlers.WithMessageEnqueuer(messageEnqueuer),

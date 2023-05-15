@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/didil/inhooks/pkg/lib"
 	"github.com/didil/inhooks/pkg/services"
 	"go.uber.org/zap"
 )
 
 type App struct {
 	logger           *zap.Logger
-	appConf          *lib.AppConfig
 	inhooksConfigSvc services.InhooksConfigService
 	messageBuilder   services.MessageBuilder
 	messageEnqueuer  services.MessageEnqueuer
@@ -32,12 +30,6 @@ func NewApp(opts ...AppOpt) *App {
 func WithLogger(logger *zap.Logger) AppOpt {
 	return func(app *App) {
 		app.logger = logger
-	}
-}
-
-func WithAppConfig(appConf *lib.AppConfig) AppOpt {
-	return func(app *App) {
-		app.appConf = appConf
 	}
 }
 

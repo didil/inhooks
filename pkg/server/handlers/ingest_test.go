@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestUpdateLB(t *testing.T) {
+func TestIngest_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -74,4 +74,45 @@ func TestUpdateLB(t *testing.T) {
 	jsonOK := &handlers.JSONOK{}
 	err = json.NewDecoder(resp.Body).Decode(jsonOK)
 	assert.NoError(t, err)
+}
+
+func TestIngest_FlowNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	inhooksConfigSvc := mocks.NewMockInhooksConfigService(ctrl)
+	messageBuilder := mocks.NewMockMessageBuilder(ctrl)
+	messageEnqueuer := mocks.NewMockMessageEnqueuer(ctrl)
+	logger, err := zap.NewDevelopment()
+	assert.NoError(t, err)
+
+	app := handlers.NewApp(
+		handlers.WithLogger(logger),
+		handlers.WithInhooksConfigService(inhooksConfigSvc),
+		handlers.WithMessageBuilder(messageBuilder),
+		handlers.WithMessageEnqueuer(messageEnqueuer),
+	)
+	r := server.NewRouter(app)
+	s := httptest.NewServer(r)
+	defer s.Close()
+
+	inhooksConfigSvc.EXPECT().FindFlowForSource("my-source").Return(nil)
+
+	buf := bytes.NewBufferString(`{"id": "abc"}`)
+
+	req, err := http.NewRequest(http.MethodPost, s.URL+"/api/v1/ingest/my-source", buf)
+	assert.NoError(t, err)
+
+	cl := &http.Client{}
+	resp, err := cl.Do(req)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+	jsonErr := &handlers.JSONErr{}
+	err = json.NewDecoder(resp.Body).Decode(jsonErr)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "unknown source slug my-source", jsonErr.Error)
 }
