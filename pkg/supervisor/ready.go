@@ -9,11 +9,11 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Supervisor) HandleReadyQueue(ctx context.Context, f *models.Flow, sink *models.Sink) {
+func (s *Supervisor) HandleReadyQueue(f *models.Flow, sink *models.Sink) {
 	logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
 
 	for {
-		err := s.FetchAndProcess(ctx, f, sink)
+		err := s.FetchAndProcess(s.ctx, f, sink)
 		if err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("failed to fetch and processed", zap.Error(err))
 			// wait before retrying

@@ -105,6 +105,8 @@ func main() {
 		logger.Fatal("failed to init ProcessingRecoveryService", zap.Error(err))
 	}
 
+	cleanupSvc := services.NewCleanupService(redisStore, timeSvc)
+
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
 		supervisor.WithMessageFetcher(messageFetcher),
@@ -114,6 +116,7 @@ func main() {
 		supervisor.WithProcessingResultsService(processingResultsSvc),
 		supervisor.WithSchedulerService(schedulerSvc),
 		supervisor.WithProcessingRecoveryService(processingRecoverySvc),
+		supervisor.WithCleanupService(cleanupSvc),
 	)
 
 	wg.Add(1)

@@ -20,6 +20,7 @@ type Supervisor struct {
 	processingResultsSvc  services.ProcessingResultsService
 	schedulerSvc          services.SchedulerService
 	processingRecoverySvc services.ProcessingRecoveryService
+	cleanupSvc            services.CleanupService
 }
 
 type SupervisorOpt func(s *Supervisor)
@@ -86,6 +87,12 @@ func WithProcessingRecoveryService(processingRecoverySvc services.ProcessingReco
 	}
 }
 
+func WithCleanupService(cleanupSvc services.CleanupService) SupervisorOpt {
+	return func(s *Supervisor) {
+		s.cleanupSvc = cleanupSvc
+	}
+}
+
 func (s *Supervisor) Start() {
 	wg := &sync.WaitGroup{}
 	flows := s.inhooksConfigSvc.GetFlows()
@@ -96,23 +103,29 @@ func (s *Supervisor) Start() {
 			sink := f.Sinks[j]
 			logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
 
-			wg.Add(3)
+			wg.Add(4)
 
 			go func() {
-				s.HandleProcessingQueue(s.ctx, f, sink)
+				s.HandleProcessingQueue(f, sink)
 				logger.Info("processing queue handler shutdown")
 				wg.Done()
 			}()
 
 			go func() {
-				s.HandleReadyQueue(s.ctx, f, sink)
+				s.HandleReadyQueue(f, sink)
 				logger.Info("ready queue handler shutdown")
 				wg.Done()
 			}()
 
 			go func() {
-				s.HandleScheduledQueue(s.ctx, f, sink)
+				s.HandleScheduledQueue(f, sink)
 				logger.Info("scheduled queue handler shutdown")
+				wg.Done()
+			}()
+
+			go func() {
+				s.HandleDoneQueue(f, sink)
+				logger.Info("done queue handler shutdown")
 				wg.Done()
 			}()
 		}

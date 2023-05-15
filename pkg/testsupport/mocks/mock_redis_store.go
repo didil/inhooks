@@ -194,6 +194,35 @@ func (mr *MockRedisStoreMockRecorder) ZRangeBelowScore(ctx, queueKey, score inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRangeBelowScore", reflect.TypeOf((*MockRedisStore)(nil).ZRangeBelowScore), ctx, queueKey, score)
 }
 
+// ZRemDel mocks base method.
+func (m *MockRedisStore) ZRemDel(ctx context.Context, queueKey string, messageIDs, messageKeys []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ZRemDel", ctx, queueKey, messageIDs, messageKeys)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ZRemDel indicates an expected call of ZRemDel.
+func (mr *MockRedisStoreMockRecorder) ZRemDel(ctx, queueKey, messageIDs, messageKeys interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRemDel", reflect.TypeOf((*MockRedisStore)(nil).ZRemDel), ctx, queueKey, messageIDs, messageKeys)
+}
+
+// ZRemRangeBelowScore mocks base method.
+func (m *MockRedisStore) ZRemRangeBelowScore(ctx context.Context, queueKey string, maxScore int) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ZRemRangeBelowScore", ctx, queueKey, maxScore)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ZRemRangeBelowScore indicates an expected call of ZRemRangeBelowScore.
+func (mr *MockRedisStoreMockRecorder) ZRemRangeBelowScore(ctx, queueKey, maxScore interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZRemRangeBelowScore", reflect.TypeOf((*MockRedisStore)(nil).ZRemRangeBelowScore), ctx, queueKey, maxScore)
+}
+
 // ZRemRpush mocks base method.
 func (m *MockRedisStore) ZRemRpush(ctx context.Context, messageIDs []string, sourceQueueKey, destQueueKey string) error {
 	m.ctrl.T.Helper()

@@ -1,7 +1,6 @@
 package supervisor
 
 import (
-	"context"
 	"time"
 
 	"github.com/didil/inhooks/pkg/models"
@@ -9,10 +8,13 @@ import (
 )
 
 // move stuck messages from processing to ready queue periodically
-func (s *Supervisor) HandleProcessingQueue(ctx context.Context, f *models.Flow, sink *models.Sink) {
+func (s *Supervisor) HandleProcessingQueue(f *models.Flow, sink *models.Sink) {
 	logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
 	for {
-		movedMessageIds, err := s.MoveProcessingToReady(ctx, f, sink)
+		// cache keys for twice the processing recovery interval
+		// this avoids the recovery process from interfering with legitimate retry attempts
+		ttl := 2 * s.appConf.Supervisor.ProcessingRecoveryInterval
+		movedMessageIds, err := s.processingRecoverySvc.MoveProcessingToReady(s.ctx, f, sink, ttl)
 		if err != nil {
 			logger.Error("failed to move processing to ready", zap.Error(err))
 		}
@@ -30,16 +32,4 @@ func (s *Supervisor) HandleProcessingQueue(ctx context.Context, f *models.Flow, 
 			continue
 		}
 	}
-}
-
-func (s *Supervisor) MoveProcessingToReady(ctx context.Context, f *models.Flow, sink *models.Sink) ([]string, error) {
-	// cache keys for twice the processing recovery interval
-	// this avoids the recovery process from interfering with legitimate retry attempts
-	ttl := 2 * s.appConf.Supervisor.ProcessingRecoveryInterval
-	movedMessageIds, err := s.processingRecoverySvc.MoveProcessingToReady(ctx, f, sink, ttl)
-	if err != nil {
-		return nil, err
-	}
-
-	return movedMessageIds, nil
 }
