@@ -12,7 +12,7 @@ Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in 
 - Receive HTTP Webhooks and Enqueue to redis
 - Fanout messages to multiple HTTP targets
 - Delayed processing
-- Retries on failure with configurable maximum number of attempts and delay
+- Retries on failure with configurable maximum attempts count, interval, with constant or exponential backoff
 - ... more features coming
 
 ## Usage
@@ -36,7 +36,8 @@ flows:
       - id: sink-2
         type: http
         url: https://example.com/othertarget
-        retryAfter: 5m # on error, retry after 5 minutes
+        retryInterval: 5m # on error, retry after 5 minutes
+        # retryExpMultiplier: 2 # exponential backoff
         maxAttemps: 10 # maximum number of attempts
 ```
 

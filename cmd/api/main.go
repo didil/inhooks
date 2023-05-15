@@ -91,7 +91,8 @@ func main() {
 	httpClient := lib.NewHttpClient(appConf)
 
 	messageProcessor := services.NewMessageProcessor(httpClient)
-	processingResultsService := services.NewProcessingResultsService(timeSvc, redisStore)
+	retryCalculator := services.NewRetryCalculator()
+	processingResultsService := services.NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
 	schedulerService := services.NewSchedulerService(redisStore, timeSvc)
 
 	svisor := supervisor.NewSupervisor(

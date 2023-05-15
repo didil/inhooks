@@ -21,8 +21,10 @@ type Sink struct {
 	URL string `yaml:"url"`
 	// Process after delay
 	Delay *time.Duration `yaml:"delay"`
-	// Retry after x time
-	RetryAfter *time.Duration `yaml:"retryAfter"`
+	// Retry every x time
+	RetryInterval *time.Duration `yaml:"retryInterval"`
+	// Retry exponential multiplier. 1 is constant backoff. Set to > 1 for exponential backoff.
+	RetryExpMultiplier *float64 `yaml:"retryExpMultiplier"`
 	// Max attempts
 	MaxAttempts *int `yaml:"maxAttempts"`
 }

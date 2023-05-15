@@ -81,8 +81,8 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 				sink.MaxAttempts = &appConf.Sink.DefaultMaxAttempts
 			}
 
-			if sink.MaxAttempts == nil {
-				sink.MaxAttempts = &appConf.Sink.DefaultMaxAttempts
+			if sink.RetryExpMultiplier == nil {
+				sink.RetryExpMultiplier = &appConf.Sink.DefaultRetryExpMultiplier
 			}
 
 			if sink.Type == SinkTypeHttp {
