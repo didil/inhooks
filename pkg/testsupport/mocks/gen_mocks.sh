@@ -11,6 +11,7 @@ services=(
     "processing_results_service"
     "scheduler_service"
     "retry_calculator"
+    "processing_recovery_service"
 )
 
 for service in ${services[@]}

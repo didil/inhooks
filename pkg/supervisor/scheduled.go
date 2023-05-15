@@ -9,18 +9,21 @@ import (
 )
 
 func (s *Supervisor) HandleScheduledQueue(ctx context.Context, f *models.Flow, sink *models.Sink) {
+	logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
 	for {
+		err := s.MoveDueScheduled(ctx, f, sink)
+		if err != nil {
+			logger.Error("failed to move due scheduled", zap.Error(err))
+		}
+
+		// wait before next check
+		timer := time.NewTimer(s.appConf.Supervisor.SchedulerInterval)
+
 		select {
 		case <-s.ctx.Done():
 			return
-		default:
-			logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
-			err := s.MoveDueScheduled(ctx, f, sink)
-			if err != nil {
-				logger.Error("failed to move due scheduled", zap.Error(err))
-			}
-			// wait before next check
-			time.Sleep(s.appConf.Supervisor.SchedulerInterval)
+		case <-timer.C:
+			continue
 		}
 	}
 }

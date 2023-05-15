@@ -94,6 +94,35 @@ func (mr *MockRedisStoreMockRecorder) Get(ctx, messageKey interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRedisStore)(nil).Get), ctx, messageKey)
 }
 
+// LRangeAll mocks base method.
+func (m *MockRedisStore) LRangeAll(ctx context.Context, queueKey string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LRangeAll", ctx, queueKey)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LRangeAll indicates an expected call of LRangeAll.
+func (mr *MockRedisStoreMockRecorder) LRangeAll(ctx, queueKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LRangeAll", reflect.TypeOf((*MockRedisStore)(nil).LRangeAll), ctx, queueKey)
+}
+
+// LRemRPush mocks base method.
+func (m *MockRedisStore) LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LRemRPush", ctx, sourceQueueKey, destQueueKey, messageIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LRemRPush indicates an expected call of LRemRPush.
+func (mr *MockRedisStoreMockRecorder) LRemRPush(ctx, sourceQueueKey, destQueueKey, messageIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LRemRPush", reflect.TypeOf((*MockRedisStore)(nil).LRemRPush), ctx, sourceQueueKey, destQueueKey, messageIDs)
+}
+
 // SetAndEnqueue mocks base method.
 func (m *MockRedisStore) SetAndEnqueue(ctx context.Context, messageKey string, value []byte, queueKey, messageID string) error {
 	m.ctrl.T.Helper()

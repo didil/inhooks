@@ -38,7 +38,7 @@ flows:
         url: https://example.com/othertarget
         retryInterval: 5m # on error, retry after 5 minutes
         # retryExpMultiplier: 2 # exponential backoff
-        maxAttemps: 10 # maximum number of attempts
+        maxAttempts: 10 # maximum number of attempts
 ```
 
 With this config, inhooks will listen to http POST requests to `/api/v1/ingest/source-1-slug`.

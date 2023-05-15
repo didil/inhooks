@@ -10,15 +10,16 @@ import (
 )
 
 type Supervisor struct {
-	logger               *zap.Logger
-	messageFetcher       services.MessageFetcher
-	ctx                  context.Context
-	cancel               context.CancelFunc
-	appConf              *lib.AppConfig
-	inhooksConfigSvc     services.InhooksConfigService
-	messageProcessor     services.MessageProcessor
-	processingResultsSvc services.ProcessingResultsService
-	schedulerSvc         services.SchedulerService
+	logger                *zap.Logger
+	messageFetcher        services.MessageFetcher
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	appConf               *lib.AppConfig
+	inhooksConfigSvc      services.InhooksConfigService
+	messageProcessor      services.MessageProcessor
+	processingResultsSvc  services.ProcessingResultsService
+	schedulerSvc          services.SchedulerService
+	processingRecoverySvc services.ProcessingRecoveryService
 }
 
 type SupervisorOpt func(s *Supervisor)
@@ -79,6 +80,12 @@ func WithSchedulerService(schedulerService services.SchedulerService) Supervisor
 	}
 }
 
+func WithProcessingRecoveryService(processingRecoverySvc services.ProcessingRecoveryService) SupervisorOpt {
+	return func(s *Supervisor) {
+		s.processingRecoverySvc = processingRecoverySvc
+	}
+}
+
 func (s *Supervisor) Start() {
 	wg := &sync.WaitGroup{}
 	flows := s.inhooksConfigSvc.GetFlows()
@@ -87,16 +94,25 @@ func (s *Supervisor) Start() {
 
 		for j := 0; j < len(f.Sinks); j++ {
 			sink := f.Sinks[j]
-			wg.Add(2)
+			logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
+
+			wg.Add(3)
 
 			go func() {
-				//TODO: move all from processing to ready (in case of previous crash)
+				s.HandleProcessingQueue(s.ctx, f, sink)
+				logger.Info("processing queue handler shutdown")
+				wg.Done()
+			}()
+
+			go func() {
 				s.HandleReadyQueue(s.ctx, f, sink)
+				logger.Info("ready queue handler shutdown")
 				wg.Done()
 			}()
 
 			go func() {
 				s.HandleScheduledQueue(s.ctx, f, sink)
+				logger.Info("scheduled queue handler shutdown")
 				wg.Done()
 			}()
 		}
