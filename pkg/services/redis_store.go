@@ -20,6 +20,8 @@ type RedisStore interface {
 	BLMove(ctx context.Context, timeout time.Duration, sourceQueueKey string, destQueueKey string) ([]byte, error)
 	ZRangeBelowScore(ctx context.Context, queueKey string, score float64) ([]string, error)
 	ZRemRpush(ctx context.Context, messageIDs []string, sourceQueueKey string, destQueueKey string) error
+	LRangeAll(ctx context.Context, queueKey string) ([]string, error)
+	LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error
 }
 
 type redisStore struct {
@@ -212,6 +214,36 @@ func (s *redisStore) ZRemRpush(ctx context.Context, messageIDs []string, sourceQ
 
 	destKeyWithPrefix := s.keyWithPrefix(destQueueKey)
 	pipe.RPush(ctx, destKeyWithPrefix, messageIDs)
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *redisStore) LRangeAll(ctx context.Context, queueKey string) ([]string, error) {
+	queueKeyWithPrefix := s.keyWithPrefix(queueKey)
+
+	vals, err := s.client.LRange(ctx, queueKeyWithPrefix, 0, -1).Result()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to lrange. queueKey: %s", queueKeyWithPrefix)
+	}
+
+	return vals, nil
+}
+
+func (s *redisStore) LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error {
+	pipe := s.client.TxPipeline()
+
+	sourceKeyWithPrefix := s.keyWithPrefix(sourceQueueKey)
+	destKeyWithPrefix := s.keyWithPrefix(destQueueKey)
+
+	for _, messageID := range messageIDs {
+		pipe.LRem(ctx, sourceKeyWithPrefix, 0, messageID)
+		pipe.RPush(ctx, destKeyWithPrefix, messageID)
+	}
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {

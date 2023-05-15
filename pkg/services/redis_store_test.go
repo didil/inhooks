@@ -111,7 +111,7 @@ func (s *RedisStoreSuite) TestBLMove() {
 	s.NoError(err)
 	s.Equal([]string{`{"id": 789}`}, destResults)
 
-	timeOut := 1 * time.Second
+	timeOut := 1 * time.Second // minimum value accepted by redis is 1 second
 
 	val1, err := s.redisStore.BLMove(ctx, timeOut, sourceQueueKey, destQueueKey)
 	s.NoError(err)
@@ -371,4 +371,73 @@ func (s *RedisStoreSuite) TestZRemRpush() {
 	s.NoError(err)
 	s.Equal([]string{"message-3", "message-1"}, queueResults)
 
+}
+
+func (s *RedisStoreSuite) TestLRangeAll() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	value1 := []byte(`message-1`)
+	value2 := []byte(`message-2`)
+
+	queueKey := "q:processing"
+
+	err := s.redisStore.Enqueue(ctx, queueKey, value1)
+	s.NoError(err)
+	err = s.redisStore.Enqueue(ctx, queueKey, value2)
+	s.NoError(err)
+
+	results, err := s.redisStore.LRangeAll(ctx, queueKey)
+	s.NoError(err)
+
+	s.Equal([]string{`message-1`, `message-2`}, results)
+}
+
+func (s *RedisStoreSuite) TestLRemRPush() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	value1 := []byte(`message-1`)
+	value2 := []byte(`message-2`)
+	value3 := []byte(`message-3`)
+	value4 := []byte(`message-4`)
+
+	sourceQueueKey := "q:processing"
+	destQueueKey := "q:ready"
+
+	err := s.redisStore.Enqueue(ctx, sourceQueueKey, value1)
+	s.NoError(err)
+	err = s.redisStore.Enqueue(ctx, sourceQueueKey, value2)
+	s.NoError(err)
+	err = s.redisStore.Enqueue(ctx, sourceQueueKey, value3)
+	s.NoError(err)
+	err = s.redisStore.Enqueue(ctx, destQueueKey, value4)
+	s.NoError(err)
+
+	results, err := s.redisStore.LRangeAll(ctx, sourceQueueKey)
+	s.NoError(err)
+	s.Equal([]string{`message-1`, `message-2`, `message-3`}, results)
+
+	results, err = s.redisStore.LRangeAll(ctx, destQueueKey)
+	s.NoError(err)
+	s.Equal([]string{`message-4`}, results)
+
+	err = s.redisStore.LRemRPush(ctx, sourceQueueKey, destQueueKey, []string{"message-1", "message-3"})
+	s.NoError(err)
+
+	results, err = s.redisStore.LRangeAll(ctx, sourceQueueKey)
+	s.NoError(err)
+	s.Equal([]string{`message-2`}, results)
+
+	results, err = s.redisStore.LRangeAll(ctx, destQueueKey)
+	s.NoError(err)
+	s.Equal([]string{`message-4`, "message-1", "message-3"}, results)
 }

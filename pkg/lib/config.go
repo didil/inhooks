@@ -33,6 +33,8 @@ type SupervisorConfig struct {
 	ReadyWaitTime     time.Duration `env:"SUPERVISOR_READY_WAIT_TIME,default=5s"`
 	ErrSleepTime      time.Duration `env:"SUPERVISOR_ERR_SLEEP_TIME,default=5s"`
 	SchedulerInterval time.Duration `env:"SUPERVISOR_SCHEDULER_INTERVAL,default=30s"`
+	// interval to move back stuck messages from processing to ready queue
+	ProcessingRecoveryInterval time.Duration `env:"SUPERVISOR_PROCESSING_RECOVERY_INTERVAL,default=5m"`
 }
 
 type HTTPClientConfig struct {

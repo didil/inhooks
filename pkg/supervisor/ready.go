@@ -10,17 +10,29 @@ import (
 )
 
 func (s *Supervisor) HandleReadyQueue(ctx context.Context, f *models.Flow, sink *models.Sink) {
+	logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
+
 	for {
+		err := s.FetchAndProcess(ctx, f, sink)
+		if err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("failed to fetch and processed", zap.Error(err))
+			// wait before retrying
+			timer := time.NewTimer(s.appConf.Supervisor.ErrSleepTime)
+
+			select {
+			case <-s.ctx.Done():
+				return
+			case <-timer.C:
+				continue
+			}
+		}
+
+		// check if channel closed
 		select {
 		case <-s.ctx.Done():
 			return
 		default:
-			err := s.FetchAndProcess(ctx, f, sink)
-			if err != nil {
-				s.logger.Error("failed to fetch and processed", zap.Error(err))
-				// wait before retrying
-				time.Sleep(s.appConf.Supervisor.ErrSleepTime)
-			}
+			continue
 		}
 	}
 }

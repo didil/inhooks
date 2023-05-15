@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/didil/inhooks/pkg/lib"
@@ -66,7 +67,6 @@ func main() {
 
 	app := handlers.NewApp(
 		handlers.WithLogger(logger),
-		handlers.WithAppConfig(appConf),
 		handlers.WithInhooksConfigService(inhooksConfigSvc),
 		handlers.WithMessageBuilder(messageBuilder),
 		handlers.WithMessageEnqueuer(messageEnqueuer),
@@ -80,20 +80,30 @@ func main() {
 		Handler: r,
 	}
 
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
 	go func() {
 		logger.Info("listening ...", zap.String("addr", addr))
 		err = httpServer.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			logger.Fatal("listener failure", zap.Error(err))
 		}
+		logger.Info("http server shutdown")
+		wg.Done()
 	}()
 
 	httpClient := lib.NewHttpClient(appConf)
 
 	messageProcessor := services.NewMessageProcessor(httpClient)
 	retryCalculator := services.NewRetryCalculator()
-	processingResultsService := services.NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
-	schedulerService := services.NewSchedulerService(redisStore, timeSvc)
+	processingResultsSvc := services.NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
+	schedulerSvc := services.NewSchedulerService(redisStore, timeSvc)
+
+	processingRecoverySvc, err := services.NewProcessingRecoveryService(redisStore)
+	if err != nil {
+		logger.Fatal("failed to init ProcessingRecoveryService", zap.Error(err))
+	}
 
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
@@ -101,19 +111,24 @@ func main() {
 		supervisor.WithAppConfig(appConf),
 		supervisor.WithInhooksConfigService(inhooksConfigSvc),
 		supervisor.WithMessageProcessor(messageProcessor),
-		supervisor.WithProcessingResultsService(processingResultsService),
-		supervisor.WithSchedulerService(schedulerService),
+		supervisor.WithProcessingResultsService(processingResultsSvc),
+		supervisor.WithSchedulerService(schedulerSvc),
+		supervisor.WithProcessingRecoveryService(processingRecoverySvc),
 	)
 
+	wg.Add(1)
 	go func() {
 		logger.Info("starting supervisor ...")
 		svisor.Start()
+		logger.Info("supervisor shutdown")
+		wg.Done()
 	}()
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 
-	<-sigs
+	sig := <-sigs
+	logger.Info("received shutdown signal, shutting down process", zap.String("signal", sig.String()))
 
 	svisor.Shutdown()
 
@@ -123,4 +138,6 @@ func main() {
 	if err != nil {
 		logger.Fatal("http server shutdown failed", zap.Error(err))
 	}
+
+	wg.Wait()
 }
