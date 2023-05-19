@@ -3,18 +3,29 @@
 [![Coverage Status](https://coveralls.io/repos/github/didil/inhooks/badge.svg?branch=main)](https://coveralls.io/github/didil/inhooks?branch=main)
 
 # Inhooks
+
+![Inhooks Logo](logo-no-background.png?raw=true "Inhooks Logo")
+
 Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in Go and runnable as a single binary or docker container. Only requires a redis database for storage/queueing.
+
+You can read more about inhooks in the [launch blog post](https://didil.medium.com/inhooks-3983b68274e1).
 
 *Note: This software is still early in its development cycle / not battle-tested. Test thoroughly before using in production systems.*
 
+## Architecture
+
+![Inhooks Architecture](inhooks-architecture.png?raw=true "Inhooks Architecture")
+
+### High level overview
+Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing module retrieves the messages and sends them reliably to the defined targets.
 
 ## Features
-- Receive HTTP Webhooks and save to queue
+- Receive HTTP Webhooks and save them to a Redis database
 - Fanout messages to multiple HTTP targets
 - Fast, concurrent processing
 - Supports delayed processing
-- Supports retries on failure with configurable maximum attempts count, interval, with constant or exponential backoff
-- ... more features coming
+- Supports retries on failure with configurable number of attempts, interval and constant or exponential backoff
+- ... more features planned
 
 ## Usage
 ### Inhooks config
