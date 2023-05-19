@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/didil/inhooks/compare/v0.1.4...v0.1.5) (2023-05-19)
+
+
+### Features
+
+* add ready queue concurrent processing ([#39](https://github.com/didil/inhooks/issues/39)) ([52d362d](https://github.com/didil/inhooks/commit/52d362dbf3c29b99a4b8daaf80c3d77989d9d786))
+
 ## [0.1.4](https://github.com/didil/inhooks/compare/v0.1.3...v0.1.4) (2023-05-15)
 
 
