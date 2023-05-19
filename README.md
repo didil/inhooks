@@ -3,6 +3,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/didil/inhooks/badge.svg?branch=main)](https://coveralls.io/github/didil/inhooks?branch=main)
 
 # Inhooks
+
+![Alt text](logo-no-background.png?raw=true "PaperLB Logo")
+
 Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in Go and runnable as a single binary or docker container. Only requires a redis database for storage/queueing.
 
 *Note: This software is still early in its development cycle / not battle-tested. Test thoroughly before using in production systems.*
