@@ -14,13 +14,16 @@ Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in 
 
 ![Inhooks Architecture](inhooks-architecture.png?raw=true "Inhooks Architecture")
 
+### High level overview
+Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing module retrieves the messages and sends them reliably to the defined targets.
+
 ## Features
-- Receive HTTP Webhooks and save to queue
+- Receives HTTP Webhooks and saves to queue
 - Fanout messages to multiple HTTP targets
 - Fast, concurrent processing
 - Supports delayed processing
-- Supports retries on failure with configurable maximum attempts count, interval, with constant or exponential backoff
-- ... more features coming
+- Supports retries on failure with configurable number of attempts, interval and constant or exponential backoff
+- ... more features planned
 
 ## Usage
 ### Inhooks config
