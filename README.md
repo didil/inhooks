@@ -8,6 +8,8 @@
 
 Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in Go and runnable as a single binary or docker container. Only requires a redis database for storage/queueing.
 
+You can read more about inhooks in the [launch blog post](https://didil.medium.com/inhooks-3983b68274e1).
+
 *Note: This software is still early in its development cycle / not battle-tested. Test thoroughly before using in production systems.*
 
 ## Architecture
@@ -18,7 +20,7 @@ Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in 
 Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing module retrieves the messages and sends them reliably to the defined targets.
 
 ## Features
-- Receives HTTP Webhooks and saves to queue
+- Receive HTTP Webhooks and save them to a Redis database
 - Fanout messages to multiple HTTP targets
 - Fast, concurrent processing
 - Supports delayed processing
