@@ -4,12 +4,15 @@
 
 # Inhooks
 
-![Alt text](logo-no-background.png?raw=true "PaperLB Logo")
+![Inhooks Logo](logo-no-background.png?raw=true "Inhooks Logo")
 
 Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in Go and runnable as a single binary or docker container. Only requires a redis database for storage/queueing.
 
 *Note: This software is still early in its development cycle / not battle-tested. Test thoroughly before using in production systems.*
 
+## Architecture
+
+![Inhooks Architecture](inhooks-architecture.png?raw=true "Inhooks Architecture")
 
 ## Features
 - Receive HTTP Webhooks and save to queue
