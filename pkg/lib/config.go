@@ -30,8 +30,9 @@ type RedisConfig struct {
 
 // Supervisor queues handling settings
 type SupervisorConfig struct {
-	ReadyWaitTime time.Duration `env:"SUPERVISOR_READY_WAIT_TIME,default=5s"`
-	ErrSleepTime  time.Duration `env:"SUPERVISOR_ERR_SLEEP_TIME,default=5s"`
+	ReadyWaitTime         time.Duration `env:"SUPERVISOR_READY_WAIT_TIME,default=5s"`
+	ReadyQueueConcurrency int           `env:"SUPERVISOR_READY_QUEUE_CONCURRENCY,default=5"`
+	ErrSleepTime          time.Duration `env:"SUPERVISOR_ERR_SLEEP_TIME,default=5s"`
 	// interval between scheduler runs to move scheduled jobs to "ready for processing" queue
 	SchedulerInterval time.Duration `env:"SUPERVISOR_SCHEDULER_INTERVAL,default=30s"`
 	// interval to move back stuck messages from processing to ready queue

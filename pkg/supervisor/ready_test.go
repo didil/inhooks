@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/didil/inhooks/pkg/testsupport"
@@ -13,13 +14,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestSupervisorFetchAndProcess_OK(t *testing.T) {
+func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 	ctx := context.Background()
 
 	appConf, err := testsupport.InitAppConfig(ctx)
 	assert.NoError(t, err)
 
 	appConf.Supervisor.ErrSleepTime = 0
+	appConf.Supervisor.ReadyQueueConcurrency = 1
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -46,10 +48,6 @@ func TestSupervisorFetchAndProcess_OK(t *testing.T) {
 	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
 	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
 
-	messageFetcher.EXPECT().GetMessageForProcessing(ctx, appConf.Supervisor.ReadyWaitTime, flowId1, sinkID1).Return(m, nil)
-	messageProcessor.EXPECT().Process(ctx, sink1, m).Return(nil)
-	processingResultsService.EXPECT().HandleOK(ctx, m).Return(nil)
-
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)
 
@@ -61,17 +59,42 @@ func TestSupervisorFetchAndProcess_OK(t *testing.T) {
 		WithLogger(logger),
 	)
 
-	err = s.FetchAndProcess(ctx, flow1, sink1)
-	assert.NoError(t, err)
+	fetcherCallCount := 0
+
+	messageFetcher.EXPECT().
+		GetMessageForProcessing(gomock.Any(), appConf.Supervisor.ReadyWaitTime, flowId1, sinkID1).AnyTimes().
+		DoAndReturn(func(ctx context.Context, timeout time.Duration, flowID string, sinkID string) (*models.Message, error) {
+			fetcherCallCount++
+
+			if fetcherCallCount == 1 {
+				return m, nil
+			}
+
+			return nil, nil
+		})
+
+	messageProcessor.EXPECT().
+		Process(gomock.Any(), sink1, m).
+		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message) error {
+			return nil
+		})
+
+	processingResultsService.EXPECT().HandleOK(gomock.Any(), m).DoAndReturn(func(ctx context.Context, m *models.Message) error {
+		s.Shutdown()
+		return nil
+	})
+
+	s.HandleReadyQueue(flow1, sink1)
 }
 
-func TestSupervisorFetchAndProcess_Failed(t *testing.T) {
+func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 	ctx := context.Background()
 
 	appConf, err := testsupport.InitAppConfig(ctx)
 	assert.NoError(t, err)
 
 	appConf.Supervisor.ErrSleepTime = 0
+	appConf.Supervisor.ReadyQueueConcurrency = 1
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -93,28 +116,50 @@ func TestSupervisorFetchAndProcess_Failed(t *testing.T) {
 	m := &models.Message{
 		ID: mID1,
 	}
+
+	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
+	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
+	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
+
+	logger, err := zap.NewDevelopment()
+	assert.NoError(t, err)
+
+	s := NewSupervisor(
+		WithMessageFetcher(messageFetcher),
+		WithMessageProcessor(messageProcessor),
+		WithProcessingResultsService(processingResultsService),
+		WithAppConfig(appConf),
+		WithLogger(logger),
+	)
 
 	processingErr := fmt.Errorf("processing error")
 
-	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
-	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
-	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
+	fetcherCallCount := 0
+	messageFetcher.EXPECT().
+		GetMessageForProcessing(gomock.Any(), appConf.Supervisor.ReadyWaitTime, flowId1, sinkID1).AnyTimes().
+		DoAndReturn(func(ctx context.Context, timeout time.Duration, flowID string, sinkID string) (*models.Message, error) {
+			fetcherCallCount++
 
-	messageFetcher.EXPECT().GetMessageForProcessing(ctx, appConf.Supervisor.ReadyWaitTime, flowId1, sinkID1).Return(m, nil)
-	messageProcessor.EXPECT().Process(ctx, sink1, m).Return(processingErr)
-	processingResultsService.EXPECT().HandleFailed(ctx, sink1, m, processingErr).Return(&models.QueuedInfo{QueueStatus: models.QueueStatusReady}, nil)
+			if fetcherCallCount == 1 {
+				return m, nil
+			}
 
-	logger, err := zap.NewDevelopment()
-	assert.NoError(t, err)
+			return nil, nil
+		})
 
-	s := NewSupervisor(
-		WithMessageFetcher(messageFetcher),
-		WithMessageProcessor(messageProcessor),
-		WithProcessingResultsService(processingResultsService),
-		WithAppConfig(appConf),
-		WithLogger(logger),
-	)
+	messageProcessor.EXPECT().
+		Process(gomock.Any(), sink1, m).
+		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message) error {
+			return processingErr
+		})
 
-	err = s.FetchAndProcess(ctx, flow1, sink1)
-	assert.NoError(t, err)
+	processingResultsService.EXPECT().
+		HandleFailed(gomock.Any(), sink1, m, processingErr).
+		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.QueuedInfo, error) {
+			s.Shutdown()
+
+			return &models.QueuedInfo{QueueStatus: models.QueueStatusReady}, nil
+		})
+
+	s.HandleReadyQueue(flow1, sink1)
 }

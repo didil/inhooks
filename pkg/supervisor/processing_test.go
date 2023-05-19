@@ -50,8 +50,7 @@ func TestSupervisorHandleProcessingQueue(t *testing.T) {
 		DoAndReturn(func(ctx context.Context, flow *models.Flow, sink *models.Sink, processingRecoveryInterval time.Duration) ([]string, error) {
 			s.Shutdown()
 			return movedMessageIds, nil
-		}).
-		Return(movedMessageIds, nil)
+		})
 
 	s.HandleProcessingQueue(flow1, sink1)
 }
