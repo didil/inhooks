@@ -9,10 +9,11 @@ Inhooks aims to be a lightweight incoming webhooks gateway solution. Written in 
 
 
 ## Features
-- Receive HTTP Webhooks and Enqueue to redis
+- Receive HTTP Webhooks and save to queue
 - Fanout messages to multiple HTTP targets
-- Delayed processing
-- Retries on failure with configurable maximum attempts count, interval, with constant or exponential backoff
+- Fast, concurrent processing
+- Supports delayed processing
+- Supports retries on failure with configurable maximum attempts count, interval, with constant or exponential backoff
 - ... more features coming
 
 ## Usage
