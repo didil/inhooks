@@ -71,11 +71,11 @@ flows:
       slug: source-1-slug
       type: http
       verification:
-        verificationType: hmac
-        hmacAlgorithm: sha256
-        signatureHeader: x-my-header
+        verificationType: hmac # only option supported at the moment
+        hmacAlgorithm: sha256 # only option supported at the moment
+        signatureHeader: x-my-header # the name of the http header in the incoming webhook that contains the signature
         signaturePrefix: "sha256=" # optional signature prefix that is required for some sources, such as github for example that uses the prefix 'sha256='
-        currentSecretEnvVar: VERIFICATION_FLOW_1_CURRENT_SECRET
+        currentSecretEnvVar: VERIFICATION_FLOW_1_CURRENT_SECRET  # the name of the environment variable containing the verification secret
         previousSecretEnvVar: VERIFICATION_FLOW_1_PREVIOUS_SECRET # optional env var that allows rotating secrets without service interruption
 ```
 
