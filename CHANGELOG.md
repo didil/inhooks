@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/didil/inhooks/compare/v0.1.5...v0.1.6) (2023-08-09)
+
+
+### Features
+
+* hmac 256 verification ([#43](https://github.com/didil/inhooks/issues/43)) ([ed1906c](https://github.com/didil/inhooks/commit/ed1906ce5fa91d8d23e2c8a4e96e4fe949526eee))
+
 ## [0.1.5](https://github.com/didil/inhooks/compare/v0.1.4...v0.1.5) (2023-05-19)
 
 
