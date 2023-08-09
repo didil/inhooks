@@ -15,6 +15,8 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 	assert.NoError(t, err)
 
 	delay := 12 * time.Minute
+	var hmacAlgorithm HMACAlgorithm = HMACAlgorithmSHA256
+
 	c := &InhooksConfig{
 		Flows: []*Flow{
 			{
@@ -39,6 +41,12 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 					ID:   "source-2",
 					Slug: "source-2-slug",
 					Type: "http",
+					Verification: &Verification{
+						VerificationType:    VerificationTypeHMAC,
+						HMACAlgorithm:       &hmacAlgorithm,
+						SignatureHeader:     "x-my-header",
+						CurrentSecretEnvVar: "FLOW_2_VERIFICATION_SECRET",
+					},
 				},
 				Sinks: []*Sink{
 					{
@@ -285,4 +293,69 @@ func TestValidateInhooksConfig_InvalidSinkUrl(t *testing.T) {
 	}
 
 	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid url: ABCD123")
+}
+
+func TestValidateInhooksConfig_InvalidVerificationType(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+					Verification: &Verification{
+						VerificationType: "random",
+					},
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+					},
+				},
+			},
+		},
+	}
+
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid verification type: random. allowed: [hmac]")
+}
+
+func TestValidateInhooksConfig_InvalidHMACAlgorithm(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	hmacAlgorithm := HMACAlgorithm("somealgorithm")
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+					Verification: &Verification{
+						VerificationType: VerificationTypeHMAC,
+						HMACAlgorithm:    &hmacAlgorithm,
+					},
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+					},
+				},
+			},
+		},
+	}
+
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid hmac algorithm: somealgorithm. allowed: [sha256]")
 }

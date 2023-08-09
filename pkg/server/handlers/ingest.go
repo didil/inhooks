@@ -37,6 +37,14 @@ func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// verify messages (first message is enough as payloads and signatures are the same)
+	err = app.messageVerifier.Verify(flow, messages[0])
+	if err != nil {
+		logger.Error("ingest request failed: unable to verify messages signature", zap.Error(err))
+		app.WriteJSONErr(w, http.StatusForbidden, reqID, fmt.Errorf("unable to verify signature"))
+		return
+	}
+
 	// enqueue messages
 	queuedInfos, err := app.messageEnqueuer.Enqueue(ctx, messages)
 	if err != nil {

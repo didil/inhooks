@@ -23,6 +23,7 @@ func TestIngest_OK(t *testing.T) {
 	inhooksConfigSvc := mocks.NewMockInhooksConfigService(ctrl)
 	messageBuilder := mocks.NewMockMessageBuilder(ctrl)
 	messageEnqueuer := mocks.NewMockMessageEnqueuer(ctrl)
+	messageVerifier := mocks.NewMockMessageVerifier(ctrl)
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)
 
@@ -31,6 +32,7 @@ func TestIngest_OK(t *testing.T) {
 		handlers.WithInhooksConfigService(inhooksConfigSvc),
 		handlers.WithMessageBuilder(messageBuilder),
 		handlers.WithMessageEnqueuer(messageEnqueuer),
+		handlers.WithMessageVerifier(messageVerifier),
 	)
 	r := server.NewRouter(app)
 	s := httptest.NewServer(r)
@@ -53,6 +55,9 @@ func TestIngest_OK(t *testing.T) {
 	}
 
 	messageBuilder.EXPECT().FromHttp(flow, gomock.AssignableToTypeOf(&http.Request{}), gomock.AssignableToTypeOf("")).Return(messages, nil)
+
+	messageVerifier.EXPECT().Verify(flow, messages[0]).Return(nil)
+
 	queuedInfos := []*models.QueuedInfo{
 		{MessageID: messages[0].ID, QueueStatus: models.QueueStatusReady},
 		{MessageID: messages[1].ID, QueueStatus: models.QueueStatusReady},

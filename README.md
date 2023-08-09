@@ -60,6 +60,26 @@ In case of failures, retries are attempted based on the sink config params.
 
 If the config is modifed, the server must be restarted to load the new config.
 
+### Securing webhooks
+If you would like to verify your webhooks with HMAC 256, you can use the following configuration:
+
+``` yaml
+flows:
+  - id: flow-1
+    source:
+      id: source-1
+      slug: source-1-slug
+      type: http
+      verification:
+        verificationType: hmac # only option supported at the moment
+        hmacAlgorithm: sha256 # only option supported at the moment
+        signatureHeader: x-my-header # the name of the http header in the incoming webhook that contains the signature
+        signaturePrefix: "sha256=" # optional signature prefix that is required for some sources, such as github for example that uses the prefix 'sha256='
+        currentSecretEnvVar: VERIFICATION_FLOW_1_CURRENT_SECRET  # the name of the environment variable containing the verification secret
+        previousSecretEnvVar: VERIFICATION_FLOW_1_PREVIOUS_SECRET # optional env var that allows rotating secrets without service interruption
+```
+
+
 ## Development setup
 ### Tools
 Go 1.20+ and Redis 6.2.6+ are required
@@ -91,7 +111,7 @@ make lint
 make run-dev
 ```
 
-Run Docker Compose
+### Run Docker Compose
 ```shell
 docker-compose up
 ```
