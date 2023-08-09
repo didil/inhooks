@@ -60,6 +60,31 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 			return fmt.Errorf("invalid source type: %s. allowed: %v", source.Type, SourceTypes)
 		}
 
+		if source.Verification != nil {
+			verification := source.Verification
+			if verification.VerificationType != "" && !slices.Contains(VerificationTypes, verification.VerificationType) {
+				return fmt.Errorf("invalid verification type: %s. allowed: %v", verification.VerificationType, VerificationTypes)
+			}
+
+			if verification.VerificationType == VerificationTypeHMAC {
+				if verification.HMACAlgorithm == nil || *verification.HMACAlgorithm == "" {
+					return fmt.Errorf("verification hmac algorithm required")
+				}
+
+				if !slices.Contains(HMACAlgorithms, *verification.HMACAlgorithm) {
+					return fmt.Errorf("invalid hmac algorithm: %s. allowed: %v", *verification.HMACAlgorithm, HMACAlgorithms)
+				}
+			}
+
+			if verification.SignatureHeader == "" {
+				return fmt.Errorf("verification signature header required")
+			}
+
+			if verification.CurrentSecretEnvVar == "" {
+				return fmt.Errorf("verification current secret env var required")
+			}
+		}
+
 		if len(f.Sinks) == 0 {
 			return fmt.Errorf("flow sinks cannot be empty")
 		}

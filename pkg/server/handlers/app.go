@@ -13,6 +13,7 @@ type App struct {
 	inhooksConfigSvc services.InhooksConfigService
 	messageBuilder   services.MessageBuilder
 	messageEnqueuer  services.MessageEnqueuer
+	messageVerifier  services.MessageVerifier
 }
 
 type AppOpt func(app *App)
@@ -48,6 +49,12 @@ func WithMessageBuilder(messageBuilder services.MessageBuilder) AppOpt {
 func WithMessageEnqueuer(messageEnqueuer services.MessageEnqueuer) AppOpt {
 	return func(app *App) {
 		app.messageEnqueuer = messageEnqueuer
+	}
+}
+
+func WithMessageVerifier(messageVerifier services.MessageVerifier) AppOpt {
+	return func(app *App) {
+		app.messageVerifier = messageVerifier
 	}
 }
 

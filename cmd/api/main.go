@@ -64,12 +64,14 @@ func main() {
 
 	messageEnqueuer := services.NewMessageEnqueuer(redisStore, timeSvc)
 	messageFetcher := services.NewMessageFetcher(redisStore, timeSvc)
+	messageVerifier := services.NewMessageVerifier()
 
 	app := handlers.NewApp(
 		handlers.WithLogger(logger),
 		handlers.WithInhooksConfigService(inhooksConfigSvc),
 		handlers.WithMessageBuilder(messageBuilder),
 		handlers.WithMessageEnqueuer(messageEnqueuer),
+		handlers.WithMessageVerifier(messageVerifier),
 	)
 
 	r := server.NewRouter(app)
