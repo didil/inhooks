@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/didil/inhooks/compare/v0.1.6...v0.1.7) (2023-08-29)
+
+
+### Bug Fixes
+
+* log processing error ([#46](https://github.com/didil/inhooks/issues/46)) ([971fcfe](https://github.com/didil/inhooks/commit/971fcfe1b231918ca7e561a46f93bf0b68686cef))
+
 ## [0.1.6](https://github.com/didil/inhooks/compare/v0.1.5...v0.1.6) (2023-08-09)
 
 
