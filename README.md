@@ -25,6 +25,7 @@ Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing m
 - Fast, concurrent processing
 - Supports delayed processing
 - Supports retries on failure with configurable number of attempts, interval and constant or exponential backoff
+- Supports different HTTP payloads types: JSON, x-www-form-urlencoded, multipart/form-data
 - ... more features planned
 
 ## Usage

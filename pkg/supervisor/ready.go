@@ -84,9 +84,8 @@ func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, si
 
 			processingErr := s.messageProcessor.Process(ctx, sink, m)
 			if processingErr != nil {
-				logger.Info("message processing failed")
+				logger.Info("message processing failed", zap.Error(processingErr))
 				messageProcessingFailureCounter.Inc()
-
 				queuedInfo, err := s.processingResultsSvc.HandleFailed(ctx, sink, m, processingErr)
 				if err != nil {
 					logger.Error("could not handle failed processing", zap.Error(err))
