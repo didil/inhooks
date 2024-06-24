@@ -7,9 +7,21 @@ import (
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var ingestRequestsCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "ingest_requests_total",
+	Help: "Number of ingest requests",
+})
+
+var enqueuedMessagesCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "enqueued_messages_total",
+	Help: "Number of enqueued messages",
+})
 
 func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -18,6 +30,7 @@ func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 	logger := app.logger.With(zap.String("reqID", reqID), zap.String("sourceSlug", sourceSlug))
 
 	logger.Info("new ingest request")
+	ingestRequestsCounter.Inc()
 
 	// find the flow
 	flow := app.inhooksConfigSvc.FindFlowForSource(sourceSlug)
@@ -52,6 +65,7 @@ func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
 		app.WriteJSONErr(w, http.StatusBadRequest, reqID, fmt.Errorf("unable to enqueue data"))
 		return
 	}
+	enqueuedMessagesCounter.Add(float64(len(queuedInfos)))
 
 	for _, queuedInfo := range queuedInfos {
 		fields := []zapcore.Field{zap.String("messageID", queuedInfo.MessageID), zap.String("queue", string(queuedInfo.QueueStatus))}
