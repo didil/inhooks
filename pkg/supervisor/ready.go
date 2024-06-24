@@ -6,6 +6,8 @@ import (
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
 )
 
@@ -48,6 +50,21 @@ func (s *Supervisor) HandleReadyQueue(f *models.Flow, sink *models.Sink) {
 	}
 }
 
+var messageProcessingAttemptsCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "message_processing_attempts_total",
+	Help: "Number of message processing attempts",
+})
+
+var messageProcessingSuccessCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "message_processing_success_total",
+	Help: "Number of successful message processing",
+})
+
+var messageProcessingFailureCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "message_processing_failure_total",
+	Help: "Number of failed message processing",
+})
+
 func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, sink *models.Sink, mChan chan *models.Message) {
 	for {
 		select {
@@ -63,10 +80,12 @@ func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, si
 			)
 
 			logger.Info("processing message", zap.Int("attempt#", len(m.DeliveryAttempts)+1))
+			messageProcessingAttemptsCounter.Inc()
 
 			processingErr := s.messageProcessor.Process(ctx, sink, m)
 			if processingErr != nil {
 				logger.Info("message processing failed", zap.Error(processingErr))
+				messageProcessingFailureCounter.Inc()
 				queuedInfo, err := s.processingResultsSvc.HandleFailed(ctx, sink, m, processingErr)
 				if err != nil {
 					logger.Error("could not handle failed processing", zap.Error(err))
@@ -75,6 +94,8 @@ func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, si
 				logger.Info("message queued after failure", zap.String("queue", string(queuedInfo.QueueStatus)), zap.Time("nextAttemptAfter", queuedInfo.DeliverAfter))
 			} else {
 				logger.Info("message processed ok")
+				messageProcessingSuccessCounter.Inc()
+
 				err := s.processingResultsSvc.HandleOK(ctx, m)
 				if err != nil {
 					logger.Error("failed to handle ok processing", zap.Error(err))
