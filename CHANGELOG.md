@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8](https://github.com/didil/inhooks/compare/v0.1.7...v0.1.8) (2024-06-24)
+
+
+### Features
+
+* Add Prometheus exporter and metrics ([#48](https://github.com/didil/inhooks/issues/48)) ([c1fc6eb](https://github.com/didil/inhooks/commit/c1fc6eb0218da0b9c5790596df04788ec29124c9))
+
 ## [0.1.7](https://github.com/didil/inhooks/compare/v0.1.6...v0.1.7) (2023-08-29)
 
 
