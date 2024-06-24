@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -120,4 +121,53 @@ func TestIngest_FlowNotFound(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "unknown source slug my-source", jsonErr.Error)
+}
+
+func TestIngest_MessageBuildFailed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	inhooksConfigSvc := mocks.NewMockInhooksConfigService(ctrl)
+	messageBuilder := mocks.NewMockMessageBuilder(ctrl)
+	messageEnqueuer := mocks.NewMockMessageEnqueuer(ctrl)
+	logger, err := zap.NewDevelopment()
+	assert.NoError(t, err)
+
+	app := handlers.NewApp(
+		handlers.WithLogger(logger),
+		handlers.WithInhooksConfigService(inhooksConfigSvc),
+		handlers.WithMessageBuilder(messageBuilder),
+		handlers.WithMessageEnqueuer(messageEnqueuer),
+	)
+	r := server.NewRouter(app)
+	s := httptest.NewServer(r)
+	defer s.Close()
+
+	flow := &models.Flow{
+		ID: "flow-id",
+		Source: &models.Source{
+			ID: "source-id",
+		},
+	}
+	inhooksConfigSvc.EXPECT().FindFlowForSource("my-source").Return(flow)
+
+	messageBuilder.EXPECT().FromHttp(flow, gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("failed to build message"))
+
+	buf := bytes.NewBufferString(`{"id": "abc"}`)
+
+	req, err := http.NewRequest(http.MethodPost, s.URL+"/api/v1/ingest/my-source", buf)
+	assert.NoError(t, err)
+
+	cl := &http.Client{}
+	resp, err := cl.Do(req)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+
+	jsonErr := &handlers.JSONErr{}
+	err = json.NewDecoder(resp.Body).Decode(jsonErr)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "unable to read data", jsonErr.Error)
 }

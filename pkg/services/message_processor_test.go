@@ -58,3 +58,14 @@ func TestMessageProcessor(t *testing.T) {
 	err := p.Process(ctx, sink, m)
 	assert.NoError(t, err)
 }
+
+func TestMessageProcessor_userAgent(t *testing.T) {
+	version.SetVersion("1.2.3")
+
+	p := &messageProcessor{}
+
+	expectedUserAgent := "Inhooks/1.2.3 (https://github.com/didil/inhooks)"
+	actualUserAgent := p.userAgent()
+
+	assert.Equal(t, expectedUserAgent, actualUserAgent)
+}
