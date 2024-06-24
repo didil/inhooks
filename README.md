@@ -78,7 +78,8 @@ flows:
         currentSecretEnvVar: VERIFICATION_FLOW_1_CURRENT_SECRET  # the name of the environment variable containing the verification secret
         previousSecretEnvVar: VERIFICATION_FLOW_1_PREVIOUS_SECRET # optional env var that allows rotating secrets without service interruption
 ```
-
+### Prometheus metrics
+Inhooks exposes Prometheus metrics at the `/api/v1/metrics` endpoint.
 
 ## Development setup
 ### Tools
