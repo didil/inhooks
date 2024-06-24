@@ -1,3 +1,5 @@
+version: 2
+
 before:
   hooks:
     - go mod tidy
@@ -22,5 +24,3 @@ archives:
       - LICENSE
       - README.md
       - CHANGELOG.md
-
-    rlcp: true
