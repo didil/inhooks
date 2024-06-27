@@ -12,7 +12,7 @@ import (
 )
 
 type MessageProcessor interface {
-	Process(ctx context.Context, sink *models.Sink, m *models.Message) error
+	Process(ctx context.Context, sink *models.Sink, m *models.Message, transformedPayload []byte) error
 }
 
 type messageProcessor struct {
@@ -25,17 +25,17 @@ func NewMessageProcessor(httpClient *http.Client) MessageProcessor {
 	}
 }
 
-func (p *messageProcessor) Process(ctx context.Context, sink *models.Sink, m *models.Message) error {
+func (p *messageProcessor) Process(ctx context.Context, sink *models.Sink, m *models.Message, transformedPayload []byte) error {
 	switch sink.Type {
 	case models.SinkTypeHttp:
-		return p.processHTTP(ctx, sink, m)
+		return p.processHTTP(ctx, sink, m, transformedPayload)
 	default:
 		return fmt.Errorf("unkown sink type %s", sink.Type)
 	}
 }
 
-func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m *models.Message) error {
-	buf := bytes.NewBuffer(m.Payload)
+func (p *messageProcessor) processHTTP(ctx context.Context, sink *models.Sink, m *models.Message, transformedPayload []byte) error {
+	buf := bytes.NewBuffer(transformedPayload)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sink.URL, buf)
 	if err != nil {

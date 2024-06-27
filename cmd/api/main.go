@@ -108,6 +108,7 @@ func main() {
 	}
 
 	cleanupSvc := services.NewCleanupService(redisStore, timeSvc)
+	payloadTransformer := services.NewPayloadTransformer()
 
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
@@ -119,6 +120,7 @@ func main() {
 		supervisor.WithSchedulerService(schedulerSvc),
 		supervisor.WithProcessingRecoveryService(processingRecoverySvc),
 		supervisor.WithCleanupService(cleanupSvc),
+		supervisor.WithPayloadTransformer(payloadTransformer),
 	)
 
 	wg.Add(1)

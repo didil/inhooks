@@ -20,6 +20,8 @@ func TestMessageProcessor(t *testing.T) {
 	p := NewMessageProcessor(cl)
 
 	payload := []byte(`{"id": "the-payload"}`)
+	transformedPayload := []byte(`{"id": "the-transformed-payload"}`)
+
 	headers := http.Header{
 		"X-Key":           []string{"123"},
 		"User-Agent":      []string{"Sender-User-Agent"},
@@ -31,14 +33,14 @@ func TestMessageProcessor(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		assert.NoError(t, err)
-		assert.Equal(t, payload, body)
+		assert.Equal(t, transformedPayload, body)
 
 		assert.Equal(t, rawQuery, req.URL.RawQuery)
 
 		assert.Equal(t, http.Header{
 			"X-Key":           []string{"123"},
 			"User-Agent":      []string{"Inhooks/test (https://github.com/didil/inhooks)"},
-			"Content-Length":  []string{"21"},
+			"Content-Length":  []string{"33"},
 			"Accept-Encoding": []string{"*"},
 		}, req.Header)
 	}))
@@ -55,7 +57,7 @@ func TestMessageProcessor(t *testing.T) {
 		Payload:     payload,
 	}
 
-	err := p.Process(ctx, sink, m)
+	err := p.Process(ctx, sink, m, transformedPayload)
 	assert.NoError(t, err)
 }
 

@@ -27,4 +27,6 @@ type Sink struct {
 	RetryExpMultiplier *float64 `yaml:"retryExpMultiplier"`
 	// Max attempts
 	MaxAttempts *int `yaml:"maxAttempts"`
+	// Transform to apply to the data
+	Transform *Transform `yaml:"transform"`
 }

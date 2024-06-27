@@ -16,14 +16,16 @@ type InhooksConfigService interface {
 	FindFlowForSource(sourceSlug string) *models.Flow
 	GetFlow(flowID string) *models.Flow
 	GetFlows() map[string]*models.Flow
+	GetTransformDefinition(transformID string) *models.TransformDefinition
 }
 
 type inhooksConfigService struct {
-	logger            *zap.Logger
-	appConf           *lib.AppConfig
-	inhooksConfig     *models.InhooksConfig
-	flowsBySourceSlug map[string]*models.Flow
-	flowsByID         map[string]*models.Flow
+	logger                   *zap.Logger
+	appConf                  *lib.AppConfig
+	inhooksConfig            *models.InhooksConfig
+	flowsBySourceSlug        map[string]*models.Flow
+	flowsByID                map[string]*models.Flow
+	transformDefinitionsByID map[string]*models.TransformDefinition
 }
 
 func NewInhooksConfigService(logger *zap.Logger, appConf *lib.AppConfig) InhooksConfigService {
@@ -60,6 +62,11 @@ func (s *inhooksConfigService) Load(filepath string) error {
 		return errors.Wrapf(err, "failed to build flows map")
 	}
 
+	err = s.initTransformDefinitionsMap()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build transform definitions map")
+	}
+
 	s.log()
 
 	return nil
@@ -75,6 +82,10 @@ func (s *inhooksConfigService) GetFlow(flowID string) *models.Flow {
 
 func (s *inhooksConfigService) GetFlows() map[string]*models.Flow {
 	return s.flowsByID
+}
+
+func (s *inhooksConfigService) GetTransformDefinition(transformID string) *models.TransformDefinition {
+	return s.transformDefinitionsByID[transformID]
 }
 
 func (s *inhooksConfigService) initFlowsMaps() error {
@@ -104,7 +115,24 @@ func (s *inhooksConfigService) initFlowsMaps() error {
 	return nil
 }
 
+func (s *inhooksConfigService) initTransformDefinitionsMap() error {
+	s.transformDefinitionsByID = map[string]*models.TransformDefinition{}
+	for _, transformDefinition := range s.inhooksConfig.TransformDefinitions {
+		s.transformDefinitionsByID[transformDefinition.ID] = transformDefinition
+	}
+
+	return nil
+}
+
 func (s *inhooksConfigService) log() {
+	for _, transform := range s.inhooksConfig.TransformDefinitions {
+		s.logger.Info("loaded transform",
+			zap.String("id", transform.ID),
+			zap.String("type", string(transform.Type)),
+			zap.String("script", transform.Script),
+		)
+	}
+
 	for _, f := range s.flowsByID {
 		s.logger.Info("loaded flow",
 			zap.String("id", f.ID),
@@ -119,6 +147,7 @@ func (s *inhooksConfigService) log() {
 				zap.String("type", string(sink.Type)),
 				zap.String("url", string(sink.URL)),
 				zap.Durationp("delay", sink.Delay),
+				zap.Any("transform", sink.Transform),
 			)
 		}
 	}
