@@ -49,13 +49,19 @@ func (mt *messageTransformer) runJavascriptTransform(payload []byte, headers htt
 		vm.Interrupt("halt")
 	})
 
-	vm.Set("bodyStr", string(payload))
+	err := vm.Set("bodyStr", string(payload))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to set bodyStr: %w", err)
+	}
 
 	headersStr, err := json.Marshal(headers)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to marshal headers to JSON: %w", err)
 	}
-	vm.Set("headersStr", string(headersStr))
+	err = vm.Set("headersStr", string(headersStr))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to set headersStr: %w", err)
+	}
 
 	// Prepare the full script
 	fullScript := fmt.Sprintf(`
