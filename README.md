@@ -26,6 +26,7 @@ Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing m
 - Supports delayed processing
 - Supports retries on failure with configurable number of attempts, interval and constant or exponential backoff
 - Supports different HTTP payloads types: JSON, x-www-form-urlencoded, multipart/form-data
+- Supports message transformation using JavaScript ECMAScript 5.1
 - ... more features planned
 
 ## Usage
@@ -79,6 +80,82 @@ flows:
         currentSecretEnvVar: VERIFICATION_FLOW_1_CURRENT_SECRET  # the name of the environment variable containing the verification secret
         previousSecretEnvVar: VERIFICATION_FLOW_1_PREVIOUS_SECRET # optional env var that allows rotating secrets without service interruption
 ```
+
+### Message transformation
+
+#### Transform definition
+
+Message transformation allows you to modify the payload and headers of messages before they are sent to the sinks (destinations). This can be useful for tasks such as adding or removing fields, changing the format of the data, or adding custom headers.
+
+Currently, only JavaScript transformations are supported. The JavaScript function should be named `transform` and should take two parameters: `bodyStr` (the message body as a string) and `headers` (the message headers as a JSON object). The function should return an array with two elements: the transformed payload as a string and the transformed headers as a JSON object.
+The `headers` fields has the following format:
+```
+{
+  "header-name": ["value1", "value2"]
+}
+```
+
+Only JavaScript ECMAScript 5.1 is supported at the moment. We use the [goja](https://github.com/dop251/goja) library to execute the JavaScript code. You can read about the limitations on goja's documentation pages.
+
+Here is an example configuration:
+```yaml
+flows:
+  - id: flow-1
+    source:
+      id: source-1
+      slug: source-1-slug
+      type: http
+    sinks:
+      - id: sink-1
+        type: http
+        url: https://example.com/target
+        transform:
+          id: js-transform-1
+transform_definitions:
+  - id: js-transform-1
+    type: javascript
+    script: |
+      function transform(bodyStr, headers) {
+        const body = JSON.parse(bodyStr);
+
+        // add a header
+        headers["X-INHOOKS-TRANSFORMED"] = ["1"];
+        // capitalize the message if present
+        if (body.msg) {
+          body.msg = body.msg.toUpperCase();
+        }
+        // delete a key from the body
+        delete body.my_dummy_key;
+
+        return [JSON.stringify(body), headers];
+      }
+```
+
+
+#### Testing transform scripts
+
+You can use the `/api/v1/transform` endpoint to test your transform scripts before adding them to your flow configuration. This endpoint allows you to simulate the transformation process and see the results immediately.
+
+To use this endpoint, send a POST request with a JSON payload containing the following fields:
+- `body`: The message body as a string
+- `headers`: The message headers as a JSON object
+- `transformDefinition`: An object containing the `type` and `script` of your transformation
+
+Here's an example of how to use the `/api/v1/transform` endpoint:
+```shell
+curl -X POST http://localhost:3000/api/v1/transform \
+  -H "Content-Type: application/json" \
+  -d '{
+        "body": "{\"msg\": \"hello world\", \"my_dummy_key\": \"value\"}",
+        "headers": {"Content-Type": ["application/json"]},
+        "transformDefinition": {
+          "type": "javascript",
+          "script": "function transform(bodyStr, headers) { const body = JSON.parse(bodyStr); headers[\"X-INHOOKS-TRANSFORMED\"] = [\"1\"]; if (body.msg) { body.msg = body.msg.toUpperCase(); } delete body.my_dummy_key; return [JSON.stringify(body), headers]; }"
+        }
+      }'
+```
+
+
 ### Prometheus metrics
 Inhooks exposes Prometheus metrics at the `/api/v1/metrics` endpoint.
 

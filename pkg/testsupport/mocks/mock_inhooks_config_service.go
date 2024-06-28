@@ -76,6 +76,20 @@ func (mr *MockInhooksConfigServiceMockRecorder) GetFlows() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFlows", reflect.TypeOf((*MockInhooksConfigService)(nil).GetFlows))
 }
 
+// GetTransformDefinition mocks base method.
+func (m *MockInhooksConfigService) GetTransformDefinition(transformID string) *models.TransformDefinition {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTransformDefinition", transformID)
+	ret0, _ := ret[0].(*models.TransformDefinition)
+	return ret0
+}
+
+// GetTransformDefinition indicates an expected call of GetTransformDefinition.
+func (mr *MockInhooksConfigServiceMockRecorder) GetTransformDefinition(transformID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTransformDefinition", reflect.TypeOf((*MockInhooksConfigService)(nil).GetTransformDefinition), transformID)
+}
+
 // Load mocks base method.
 func (m *MockInhooksConfigService) Load(path string) error {
 	m.ctrl.T.Helper()

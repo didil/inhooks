@@ -28,9 +28,13 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 
 	flowId1 := "flow-1"
 	sinkID1 := "sink-1"
+	transformID1 := "transform-1"
 
 	sink1 := &models.Sink{
 		ID: sinkID1,
+		Transform: &models.Transform{
+			ID: transformID1,
+		},
 	}
 
 	flow1 := &models.Flow{
@@ -41,12 +45,21 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 	mID1 := "message-1"
 
 	m := &models.Message{
-		ID: mID1,
+		ID:      mID1,
+		Payload: []byte(`{"id": "the-payload"}`),
+	}
+
+	transformDefinition := &models.TransformDefinition{
+		ID:     "transform-definition-1",
+		Type:   models.TransformTypeJavascript,
+		Script: "some script",
 	}
 
 	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
+	messageTransformer := mocks.NewMockMessageTransformer(ctrl)
 	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
 	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
+	inhooksConfigService := mocks.NewMockInhooksConfigService(ctrl)
 
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)
@@ -56,6 +69,8 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 		WithMessageProcessor(messageProcessor),
 		WithProcessingResultsService(processingResultsService),
 		WithAppConfig(appConf),
+		WithMessageTransformer(messageTransformer),
+		WithInhooksConfigService(inhooksConfigService),
 		WithLogger(logger),
 	)
 
@@ -70,7 +85,21 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 				return m, nil
 			}
 
+			// simulate blocking
+			time.Sleep(100 * time.Millisecond)
 			return nil, nil
+		})
+
+	inhooksConfigService.EXPECT().
+		GetTransformDefinition(transformID1).
+		DoAndReturn(func(sinkID string) *models.TransformDefinition {
+			return transformDefinition
+		})
+
+	messageTransformer.EXPECT().
+		Transform(gomock.Any(), transformDefinition, m).
+		DoAndReturn(func(ctx context.Context, transformDefinition *models.TransformDefinition, message *models.Message) error {
+			return nil
 		})
 
 	messageProcessor.EXPECT().
@@ -101,9 +130,13 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 
 	flowId1 := "flow-1"
 	sinkID1 := "sink-1"
+	transformID1 := "transform-1"
 
 	sink1 := &models.Sink{
 		ID: sinkID1,
+		Transform: &models.Transform{
+			ID: "transform-1",
+		},
 	}
 
 	flow1 := &models.Flow{
@@ -117,9 +150,17 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 		ID: mID1,
 	}
 
+	transformDefinition := &models.TransformDefinition{
+		ID:     "transform-definition-1",
+		Type:   models.TransformTypeJavascript,
+		Script: "some script",
+	}
+
 	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
 	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
 	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
+	messageTransformer := mocks.NewMockMessageTransformer(ctrl)
+	inhooksConfigService := mocks.NewMockInhooksConfigService(ctrl)
 
 	logger, err := zap.NewDevelopment()
 	assert.NoError(t, err)
@@ -127,6 +168,8 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 	s := NewSupervisor(
 		WithMessageFetcher(messageFetcher),
 		WithMessageProcessor(messageProcessor),
+		WithMessageTransformer(messageTransformer),
+		WithInhooksConfigService(inhooksConfigService),
 		WithProcessingResultsService(processingResultsService),
 		WithAppConfig(appConf),
 		WithLogger(logger),
@@ -146,6 +189,14 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 
 			return nil, nil
 		})
+
+	inhooksConfigService.EXPECT().
+		GetTransformDefinition(transformID1).
+		Return(transformDefinition)
+
+	messageTransformer.EXPECT().
+		Transform(gomock.Any(), transformDefinition, m).
+		Return(nil)
 
 	messageProcessor.EXPECT().
 		Process(gomock.Any(), sink1, m).

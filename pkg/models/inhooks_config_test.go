@@ -32,6 +32,9 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 						Type:  "http",
 						URL:   "https://example.com/sink",
 						Delay: &delay,
+						Transform: &Transform{
+							ID: "js-transform-1",
+						},
 					},
 				},
 			},
@@ -55,6 +58,13 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 						URL:  "https://example.com/sink",
 					},
 				},
+			},
+		},
+		TransformDefinitions: []*TransformDefinition{
+			{
+				ID:     "js-transform-1",
+				Type:   TransformTypeJavascript,
+				Script: "function transform(data) data.username = data.name end",
 			},
 		},
 	}
@@ -358,4 +368,117 @@ func TestValidateInhooksConfig_InvalidHMACAlgorithm(t *testing.T) {
 	}
 
 	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid hmac algorithm: somealgorithm. allowed: [sha256]")
+}
+func TestValidateInhooksConfig_InexistingTransformID(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+						Transform: &Transform{
+							ID: "non-existent-transform",
+						},
+					},
+				},
+			},
+		},
+		TransformDefinitions: []*TransformDefinition{
+			{
+				ID:     "js-transform-1",
+				Type:   TransformTypeJavascript,
+				Script: "function transform(data) end",
+			},
+		},
+	}
+
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "transform id not found: non-existent-transform")
+}
+
+func TestValidateInhooksConfig_InvalidTransformType(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+						Transform: &Transform{
+							ID: "some-transform-1",
+						},
+					},
+				},
+			},
+		},
+		TransformDefinitions: []*TransformDefinition{
+			{
+				ID:     "some-transform-1",
+				Type:   "invalid-type",
+				Script: "function transform(data) end",
+			},
+		},
+	}
+
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid transform type: invalid-type. allowed: [javascript]")
+}
+
+func TestValidateInhooksConfig_EmptyTransformScript(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+						Transform: &Transform{
+							ID: "js-transform-1",
+						},
+					},
+				},
+			},
+		},
+		TransformDefinitions: []*TransformDefinition{
+			{
+				ID:     "js-transform-1",
+				Type:   TransformTypeJavascript,
+				Script: "",
+			},
+		},
+	}
+
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "transform script cannot be empty")
 }

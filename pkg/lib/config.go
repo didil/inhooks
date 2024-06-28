@@ -15,6 +15,7 @@ type AppConfig struct {
 	Supervisor        SupervisorConfig
 	HTTPClient        HTTPClientConfig
 	Sink              SinkConfig
+	Transform         TransformConfig
 }
 
 type ServerConfig struct {
@@ -55,6 +56,10 @@ type SinkConfig struct {
 	DefaultRetryInterval time.Duration `env:"SINK_DEFAULT_RETRY_AFTER,default=0"`
 	// default retry exponential mutiplier is 1 (constant backoff)
 	DefaultRetryExpMultiplier float64 `env:"SINK_DEFAULT_RETRY_EXP_MULTIPLIER,default=1"`
+}
+
+type TransformConfig struct {
+	JavascriptTimeout time.Duration `env:"TRANSFORM_JAVASCRIPT_TIMEOUT,default=1s"`
 }
 
 func InitAppConfig(ctx context.Context) (*AppConfig, error) {

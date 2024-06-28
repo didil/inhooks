@@ -9,11 +9,12 @@ import (
 )
 
 type App struct {
-	logger           *zap.Logger
-	inhooksConfigSvc services.InhooksConfigService
-	messageBuilder   services.MessageBuilder
-	messageEnqueuer  services.MessageEnqueuer
-	messageVerifier  services.MessageVerifier
+	logger             *zap.Logger
+	inhooksConfigSvc   services.InhooksConfigService
+	messageBuilder     services.MessageBuilder
+	messageEnqueuer    services.MessageEnqueuer
+	messageVerifier    services.MessageVerifier
+	messageTransformer services.MessageTransformer
 }
 
 type AppOpt func(app *App)
@@ -55,6 +56,12 @@ func WithMessageEnqueuer(messageEnqueuer services.MessageEnqueuer) AppOpt {
 func WithMessageVerifier(messageVerifier services.MessageVerifier) AppOpt {
 	return func(app *App) {
 		app.messageVerifier = messageVerifier
+	}
+}
+
+func WithMessageTransformer(messageTransformer services.MessageTransformer) AppOpt {
+	return func(app *App) {
+		app.messageTransformer = messageTransformer
 	}
 }
 

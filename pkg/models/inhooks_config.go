@@ -10,7 +10,8 @@ import (
 )
 
 type InhooksConfig struct {
-	Flows []*Flow `yaml:"flows"`
+	Flows                []*Flow                `yaml:"flows"`
+	TransformDefinitions []*TransformDefinition `yaml:"transform_definitions"`
 }
 
 var idRegex = regexp.MustCompile(`^[a-zA-Z0-9\-]{1,255}$`)
@@ -27,6 +28,28 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 
 	flowIDs := map[string]bool{}
 	sourceSlugs := map[string]bool{}
+	transformIDs := map[string]bool{}
+
+	if c.TransformDefinitions != nil {
+		for i, transform := range c.TransformDefinitions {
+			if !slices.Contains(TransformTypes, transform.Type) {
+				return fmt.Errorf("invalid transform type: %s. allowed: %v", transform.Type, TransformTypes)
+			}
+
+			if !idRegex.MatchString(transform.ID) {
+				return idValidationErr(fmt.Sprintf("transforms[%d].id", i))
+			}
+
+			if transformIDs[transform.ID] {
+				return fmt.Errorf("transform ids must be unique. duplicate transform id: %s", transform.ID)
+			}
+			transformIDs[transform.ID] = true
+
+			if transform.Script == "" {
+				return fmt.Errorf("transform script cannot be empty")
+			}
+		}
+	}
 
 	for i, f := range c.Flows {
 		if !idRegex.MatchString(f.ID) {
@@ -117,6 +140,13 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 				}
 				if u.Scheme != "http" && u.Scheme != "https" {
 					return fmt.Errorf("invalid url scheme: %s", sink.URL)
+				}
+			}
+
+			// validate transform
+			if sink.Transform != nil {
+				if !transformIDs[sink.Transform.ID] {
+					return fmt.Errorf("transform id not found: %s", sink.Transform.ID)
 				}
 			}
 		}

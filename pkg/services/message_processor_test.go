@@ -20,6 +20,7 @@ func TestMessageProcessor(t *testing.T) {
 	p := NewMessageProcessor(cl)
 
 	payload := []byte(`{"id": "the-payload"}`)
+
 	headers := http.Header{
 		"X-Key":           []string{"123"},
 		"User-Agent":      []string{"Sender-User-Agent"},
