@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/didil/inhooks/compare/v0.1.8...v0.1.9) (2024-06-28)
+
+
+### Features
+
+* Message transform with javascript ([#55](https://github.com/didil/inhooks/issues/55)) ([75a0092](https://github.com/didil/inhooks/commit/75a009204107abcd320a289b3d5da8b5123d8b81))
+
 ## [0.1.8](https://github.com/didil/inhooks/compare/v0.1.7...v0.1.8) (2024-06-24)
 
 
