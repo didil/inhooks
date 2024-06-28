@@ -33,7 +33,7 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 						URL:   "https://example.com/sink",
 						Delay: &delay,
 						Transform: &Transform{
-							ID: "lua-transform-1",
+							ID: "js-transform-1",
 						},
 					},
 				},
@@ -62,8 +62,8 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 		},
 		TransformDefinitions: []*TransformDefinition{
 			{
-				ID:     "lua-transform-1",
-				Type:   TransformTypeLua,
+				ID:     "js-transform-1",
+				Type:   TransformTypeJavascript,
 				Script: "function transform(data) data.username = data.name end",
 			},
 		},
@@ -397,8 +397,8 @@ func TestValidateInhooksConfig_InexistingTransformID(t *testing.T) {
 		},
 		TransformDefinitions: []*TransformDefinition{
 			{
-				ID:     "lua-transform-1",
-				Type:   TransformTypeLua,
+				ID:     "js-transform-1",
+				Type:   TransformTypeJavascript,
 				Script: "function transform(data) end",
 			},
 		},
@@ -427,7 +427,7 @@ func TestValidateInhooksConfig_InvalidTransformType(t *testing.T) {
 						Type: "http",
 						URL:  "https://example.com/sink",
 						Transform: &Transform{
-							ID: "lua-transform-1",
+							ID: "some-transform-1",
 						},
 					},
 				},
@@ -435,14 +435,14 @@ func TestValidateInhooksConfig_InvalidTransformType(t *testing.T) {
 		},
 		TransformDefinitions: []*TransformDefinition{
 			{
-				ID:     "lua-transform-1",
+				ID:     "some-transform-1",
 				Type:   "invalid-type",
 				Script: "function transform(data) end",
 			},
 		},
 	}
 
-	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid transform type: invalid-type. allowed: [lua]")
+	assert.ErrorContains(t, ValidateInhooksConfig(appConf, c), "invalid transform type: invalid-type. allowed: [javascript]")
 }
 
 func TestValidateInhooksConfig_EmptyTransformScript(t *testing.T) {
@@ -465,7 +465,7 @@ func TestValidateInhooksConfig_EmptyTransformScript(t *testing.T) {
 						Type: "http",
 						URL:  "https://example.com/sink",
 						Transform: &Transform{
-							ID: "lua-transform-1",
+							ID: "js-transform-1",
 						},
 					},
 				},
@@ -473,8 +473,8 @@ func TestValidateInhooksConfig_EmptyTransformScript(t *testing.T) {
 		},
 		TransformDefinitions: []*TransformDefinition{
 			{
-				ID:     "lua-transform-1",
-				Type:   TransformTypeLua,
+				ID:     "js-transform-1",
+				Type:   TransformTypeJavascript,
 				Script: "",
 			},
 		},

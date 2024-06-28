@@ -49,16 +49,14 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 		Payload: []byte(`{"id": "the-payload"}`),
 	}
 
-	transformedPayload := []byte(`{"id": "the-transformed-payload"}`)
-
 	transformDefinition := &models.TransformDefinition{
 		ID:     "transform-definition-1",
-		Type:   models.TransformTypeLua,
+		Type:   models.TransformTypeJavascript,
 		Script: "some script",
 	}
 
 	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
-	payloadTransformer := mocks.NewMockPayloadTransformer(ctrl)
+	messageTransformer := mocks.NewMockMessageTransformer(ctrl)
 	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
 	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
 	inhooksConfigService := mocks.NewMockInhooksConfigService(ctrl)
@@ -71,7 +69,7 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 		WithMessageProcessor(messageProcessor),
 		WithProcessingResultsService(processingResultsService),
 		WithAppConfig(appConf),
-		WithPayloadTransformer(payloadTransformer),
+		WithMessageTransformer(messageTransformer),
 		WithInhooksConfigService(inhooksConfigService),
 		WithLogger(logger),
 	)
@@ -98,15 +96,15 @@ func TestSupervisorHandleReadyQueue_OK(t *testing.T) {
 			return transformDefinition
 		})
 
-	payloadTransformer.EXPECT().
-		Transform(gomock.Any(), transformDefinition, m.Payload).
-		DoAndReturn(func(ctx context.Context, transformDefinition *models.TransformDefinition, payload []byte) ([]byte, error) {
-			return transformedPayload, nil
+	messageTransformer.EXPECT().
+		Transform(gomock.Any(), transformDefinition, m).
+		DoAndReturn(func(ctx context.Context, transformDefinition *models.TransformDefinition, message *models.Message) error {
+			return nil
 		})
 
 	messageProcessor.EXPECT().
-		Process(gomock.Any(), sink1, m, transformedPayload).
-		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message, transformedPayload []byte) error {
+		Process(gomock.Any(), sink1, m).
+		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message) error {
 			return nil
 		})
 
@@ -152,18 +150,16 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 		ID: mID1,
 	}
 
-	transformedPayload := []byte(`{"id": "the-transformed-payload"}`)
-
 	transformDefinition := &models.TransformDefinition{
 		ID:     "transform-definition-1",
-		Type:   models.TransformTypeLua,
+		Type:   models.TransformTypeJavascript,
 		Script: "some script",
 	}
 
 	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
 	messageProcessor := mocks.NewMockMessageProcessor(ctrl)
 	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
-	payloadTransformer := mocks.NewMockPayloadTransformer(ctrl)
+	messageTransformer := mocks.NewMockMessageTransformer(ctrl)
 	inhooksConfigService := mocks.NewMockInhooksConfigService(ctrl)
 
 	logger, err := zap.NewDevelopment()
@@ -172,7 +168,7 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 	s := NewSupervisor(
 		WithMessageFetcher(messageFetcher),
 		WithMessageProcessor(messageProcessor),
-		WithPayloadTransformer(payloadTransformer),
+		WithMessageTransformer(messageTransformer),
 		WithInhooksConfigService(inhooksConfigService),
 		WithProcessingResultsService(processingResultsService),
 		WithAppConfig(appConf),
@@ -198,13 +194,13 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 		GetTransformDefinition(transformID1).
 		Return(transformDefinition)
 
-	payloadTransformer.EXPECT().
-		Transform(gomock.Any(), transformDefinition, m.Payload).
-		Return(transformedPayload, nil)
+	messageTransformer.EXPECT().
+		Transform(gomock.Any(), transformDefinition, m).
+		Return(nil)
 
 	messageProcessor.EXPECT().
-		Process(gomock.Any(), sink1, m, transformedPayload).
-		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message, transformedPayload []byte) error {
+		Process(gomock.Any(), sink1, m).
+		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message) error {
 			return processingErr
 		})
 

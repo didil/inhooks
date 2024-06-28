@@ -79,22 +79,25 @@ func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, si
 				zap.String("ingestedReqID", m.IngestedReqID),
 			)
 
-			transformDefinition := s.inhooksConfigSvc.GetTransformDefinition(sink.Transform.ID)
-			if transformDefinition == nil {
-				logger.Error("transform definition not found", zap.String("transformID", sink.Transform.ID))
-				continue
-			}
+			if sink.Transform != nil {
+				transformDefinition := s.inhooksConfigSvc.GetTransformDefinition(sink.Transform.ID)
+				if transformDefinition == nil {
+					logger.Error("transform definition not found", zap.String("transformID", sink.Transform.ID))
+					continue
+				}
 
-			transformedPayload, err := s.payloadTransformer.Transform(ctx, transformDefinition, m.Payload)
-			if err != nil {
-				logger.Error("failed to transform payload", zap.Error(err))
-				continue
+				logger.Info("transforming message", zap.String("transformID", transformDefinition.ID))
+				err := s.messageTransformer.Transform(ctx, transformDefinition, m)
+				if err != nil {
+					logger.Error("failed to transform payload", zap.Error(err))
+					continue
+				}
 			}
 
 			logger.Info("processing message", zap.Int("attempt#", len(m.DeliveryAttempts)+1))
 			messageProcessingAttemptsCounter.Inc()
 
-			processingErr := s.messageProcessor.Process(ctx, sink, m, transformedPayload)
+			processingErr := s.messageProcessor.Process(ctx, sink, m)
 			if processingErr != nil {
 				logger.Info("message processing failed", zap.Error(processingErr))
 				messageProcessingFailureCounter.Inc()

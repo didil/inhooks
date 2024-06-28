@@ -3,11 +3,11 @@ package models
 type TransformType string
 
 const (
-	TransformTypeLua = "lua"
+	TransformTypeJavascript = "javascript"
 )
 
 var TransformTypes = []TransformType{
-	TransformTypeLua,
+	TransformTypeJavascript,
 }
 
 type TransformDefinition struct {

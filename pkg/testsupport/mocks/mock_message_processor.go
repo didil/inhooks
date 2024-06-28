@@ -36,15 +36,15 @@ func (m *MockMessageProcessor) EXPECT() *MockMessageProcessorMockRecorder {
 }
 
 // Process mocks base method.
-func (m_2 *MockMessageProcessor) Process(ctx context.Context, sink *models.Sink, m *models.Message, transformedPayload []byte) error {
+func (m_2 *MockMessageProcessor) Process(ctx context.Context, sink *models.Sink, m *models.Message) error {
 	m_2.ctrl.T.Helper()
-	ret := m_2.ctrl.Call(m_2, "Process", ctx, sink, m, transformedPayload)
+	ret := m_2.ctrl.Call(m_2, "Process", ctx, sink, m)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Process indicates an expected call of Process.
-func (mr *MockMessageProcessorMockRecorder) Process(ctx, sink, m, transformedPayload interface{}) *gomock.Call {
+func (mr *MockMessageProcessorMockRecorder) Process(ctx, sink, m interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*MockMessageProcessor)(nil).Process), ctx, sink, m, transformedPayload)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*MockMessageProcessor)(nil).Process), ctx, sink, m)
 }

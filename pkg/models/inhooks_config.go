@@ -28,7 +28,7 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 
 	flowIDs := map[string]bool{}
 	sourceSlugs := map[string]bool{}
-	luaTransformIDs := map[string]bool{}
+	transformIDs := map[string]bool{}
 
 	if c.TransformDefinitions != nil {
 		for i, transform := range c.TransformDefinitions {
@@ -40,10 +40,10 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 				return idValidationErr(fmt.Sprintf("transforms[%d].id", i))
 			}
 
-			if luaTransformIDs[transform.ID] {
+			if transformIDs[transform.ID] {
 				return fmt.Errorf("transform ids must be unique. duplicate transform id: %s", transform.ID)
 			}
-			luaTransformIDs[transform.ID] = true
+			transformIDs[transform.ID] = true
 
 			if transform.Script == "" {
 				return fmt.Errorf("transform script cannot be empty")
@@ -145,8 +145,8 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 
 			// validate transform
 			if sink.Transform != nil {
-				if !luaTransformIDs[sink.Transform.ID] {
-					return fmt.Errorf("lua transform id not found: %s", sink.Transform.ID)
+				if !transformIDs[sink.Transform.ID] {
+					return fmt.Errorf("transform id not found: %s", sink.Transform.ID)
 				}
 			}
 		}

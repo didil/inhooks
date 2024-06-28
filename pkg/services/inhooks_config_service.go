@@ -129,7 +129,6 @@ func (s *inhooksConfigService) log() {
 		s.logger.Info("loaded transform",
 			zap.String("id", transform.ID),
 			zap.String("type", string(transform.Type)),
-			zap.String("script", transform.Script),
 		)
 	}
 

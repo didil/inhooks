@@ -21,7 +21,7 @@ type Supervisor struct {
 	schedulerSvc          services.SchedulerService
 	processingRecoverySvc services.ProcessingRecoveryService
 	cleanupSvc            services.CleanupService
-	payloadTransformer    services.PayloadTransformer
+	messageTransformer    services.MessageTransformer
 }
 
 type SupervisorOpt func(s *Supervisor)
@@ -94,9 +94,9 @@ func WithCleanupService(cleanupSvc services.CleanupService) SupervisorOpt {
 	}
 }
 
-func WithPayloadTransformer(payloadTransformer services.PayloadTransformer) SupervisorOpt {
+func WithMessageTransformer(messageTransformer services.MessageTransformer) SupervisorOpt {
 	return func(s *Supervisor) {
-		s.payloadTransformer = payloadTransformer
+		s.messageTransformer = messageTransformer
 	}
 }
 

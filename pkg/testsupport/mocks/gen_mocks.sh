@@ -14,7 +14,7 @@ services=(
     "processing_recovery_service"
     "cleanup_service"
     "message_verifier"
-    "payload_transformer"
+    "message_transformer"
 )
 
 for service in ${services[@]}

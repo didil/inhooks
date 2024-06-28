@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,6 +27,15 @@ var (
 func main() {
 	versionpkg.SetVersion(version)
 
+	// handle version command
+	isVersionCmd := flag.Bool("version", false, "print the version")
+	flag.Parse()
+	if *isVersionCmd {
+		fmt.Println(version)
+		os.Exit(0)
+	}
+
+	// start server
 	err := lib.LoadEnv()
 	if err != nil {
 		log.Fatalf("failed to load env: %v", err)
@@ -40,6 +50,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize logger: %v", err)
 	}
+
+	logger.Info("starting Inhooks", zap.String("version", version))
 
 	inhooksConfigSvc := services.NewInhooksConfigService(logger, appConf)
 	logger.Info("loading inhooks config", zap.String("inhooksConfigFile", appConf.InhooksConfigFile))
@@ -65,6 +77,7 @@ func main() {
 	messageEnqueuer := services.NewMessageEnqueuer(redisStore, timeSvc)
 	messageFetcher := services.NewMessageFetcher(redisStore, timeSvc)
 	messageVerifier := services.NewMessageVerifier()
+	messageTransformer := services.NewMessageTransformer(&appConf.Transform)
 
 	app := handlers.NewApp(
 		handlers.WithLogger(logger),
@@ -72,6 +85,7 @@ func main() {
 		handlers.WithMessageBuilder(messageBuilder),
 		handlers.WithMessageEnqueuer(messageEnqueuer),
 		handlers.WithMessageVerifier(messageVerifier),
+		handlers.WithMessageTransformer(messageTransformer),
 	)
 
 	r := server.NewRouter(app)
@@ -108,7 +122,6 @@ func main() {
 	}
 
 	cleanupSvc := services.NewCleanupService(redisStore, timeSvc)
-	payloadTransformer := services.NewPayloadTransformer()
 
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
@@ -120,7 +133,7 @@ func main() {
 		supervisor.WithSchedulerService(schedulerSvc),
 		supervisor.WithProcessingRecoveryService(processingRecoverySvc),
 		supervisor.WithCleanupService(cleanupSvc),
-		supervisor.WithPayloadTransformer(payloadTransformer),
+		supervisor.WithMessageTransformer(messageTransformer),
 	)
 
 	wg.Add(1)
