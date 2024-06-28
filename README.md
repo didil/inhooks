@@ -29,6 +29,17 @@ Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing m
 - Supports message transformation using JavaScript ECMAScript 5.1
 - ... more features planned
 
+## Downloading release binaries
+The release binaries are available on the [GitHub releases](https://github.com/didil/inhooks/releases) page.
+To download a specific version, adjust then env vars below and run:
+```shell
+export INHOOKS_VERSION="0.1.9"
+export OS="linux"
+export ARCH="amd64"
+curl -LO https://github.com/didil/inhooks/releases/download/v${INHOOKS_VERSION}/inhooks_${INHOOKS_VERSION}_${OS}_${ARCH}.tar.gz
+tar -xvzf inhooks_${INHOOKS_VERSION}_${OS}_${ARCH}.tar.gz
+```
+
 ## Usage
 ### Inhooks config
 The inhooks config file allows setting up the Source to Sink flows.
@@ -61,6 +72,12 @@ When a message is received, it is saved to the redis database. Then inhooks trie
 In case of failures, retries are attempted based on the sink config params.
 
 If the config is modifed, the server must be restarted to load the new config.
+
+### Env vars
+Copy the .env examples to init the .env file and update as needed (to set the inhooks config file path, the redis url, the server port, etc).
+```shell
+cp .env.example .env
+```
 
 ### Securing webhooks
 If you would like to verify your webhooks with HMAC 256, you can use the following configuration:
