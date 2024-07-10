@@ -17,11 +17,13 @@ You can read more about inhooks in the [launch blog post](https://didil.medium.c
 ![Inhooks Architecture](inhooks-architecture.png?raw=true "Inhooks Architecture")
 
 ### High level overview
-Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing module retrieves the messages and sends them reliably to the defined targets.
+Inhooks consists of two major concepts, Sources and Sinks. A Source is an endpoint for receiving webhooks, and a [Sink](https://en.wikipedia.org/wiki/Sink_(computing)) is a target that receives the webhooks.
+
+Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing module retrieves the messages and sends them reliably to the defined sinks.
 
 ## Features
 - Receive HTTP Webhooks and save them to a Redis database
-- Fanout messages to multiple HTTP targets
+- Fanout messages to multiple HTTP targets (sinks)
 - Fast, concurrent processing
 - Supports delayed processing
 - Supports retries on failure with configurable number of attempts, interval and constant or exponential backoff
