@@ -24,3 +24,23 @@ archives:
       - LICENSE
       - README.md
       - CHANGELOG.md
+
+kos:
+  - repository: ghcr.io/kusold/inhooks
+    tags:
+      - "{{.Version}}"
+      - latest
+    # Bare uses a tag on the $KO_DOCKER_REPO without anything additional.
+    bare: true
+    # Whether to preserve the full import path after the repository name.
+    preserve_import_paths: false
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
+    # Base image to publish to use.
+    base_image: alpine
+    tags:
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
