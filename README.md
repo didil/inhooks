@@ -42,6 +42,10 @@ curl -LO https://github.com/didil/inhooks/releases/download/v${INHOOKS_VERSION}/
 tar -xvzf inhooks_${INHOOKS_VERSION}_${OS}_${ARCH}.tar.gz
 ```
 
+## Docker images:
+The docker images are available at:
+
+
 ## Usage
 ### Inhooks config
 The inhooks config file allows setting up the Source to Sink flows.
