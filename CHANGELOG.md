@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.10](https://github.com/didil/inhooks/compare/v0.1.9...v0.1.10) (2025-01-24)
+
+
+### Features
+
+* add docker images ([#63](https://github.com/didil/inhooks/issues/63)) ([a2c66ad](https://github.com/didil/inhooks/commit/a2c66ad24943114a4fc808906ea20ada9fff19c5))
+
 ## [0.1.9](https://github.com/didil/inhooks/compare/v0.1.8...v0.1.9) (2024-06-28)
 
 
