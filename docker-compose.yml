@@ -1,8 +1,7 @@
-version: '3'
 
 services:
   redis:
-    image: redis:6.2.12
+    image: redis:7.4.2
     volumes:
       - redis-data:/data
     ports:

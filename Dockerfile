@@ -1,5 +1,5 @@
 # Base
-FROM golang:1.20-alpine AS base
+FROM golang:1.23-alpine AS base
 
 RUN apk update && apk add --no-cache build-base
 RUN apk add git
@@ -16,7 +16,7 @@ COPY . .
 RUN make build
 
 # Final
-FROM alpine:3.17
+FROM alpine:3.21
 
 WORKDIR /app
 

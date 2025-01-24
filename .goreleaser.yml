@@ -24,3 +24,24 @@ archives:
       - LICENSE
       - README.md
       - CHANGELOG.md
+
+dockers:
+  - image_templates:
+      - "ghcr.io/didil/inhooks:{{ .Tag }}-amd64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "ghcr.io/didil/inhooks:{{ .Tag }}-arm64"
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+    goarch: arm64
+
+docker_manifests:
+  - name_template: "ghcr.io/didil/inhooks:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/didil/inhooks:{{ .Tag }}-amd64"
+      - "ghcr.io/didil/inhooks:{{ .Tag }}-arm64"
