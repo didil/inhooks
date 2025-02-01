@@ -35,7 +35,7 @@ Inhooks listens to HTTP webhooks and saves the messages to Redis. A processing m
 The release binaries are available on the [GitHub releases](https://github.com/didil/inhooks/releases) page.
 To download a specific version, adjust then env vars below and run:
 ```shell
-export INHOOKS_VERSION="0.1.9"
+export INHOOKS_VERSION="0.1.11"
 export OS="linux"
 export ARCH="amd64"
 curl -LO https://github.com/didil/inhooks/releases/download/v${INHOOKS_VERSION}/inhooks_${INHOOKS_VERSION}_${OS}_${ARCH}.tar.gz
@@ -43,8 +43,17 @@ tar -xvzf inhooks_${INHOOKS_VERSION}_${OS}_${ARCH}.tar.gz
 ```
 
 ## Docker images:
-The released docker images are available at:
+The released docker images are available at: https://github.com/didil/inhooks/pkgs/container/inhooks
 
+A minimal example to run the docker image:
+```
+docker run -it --rm \
+-e REDIS_INHOOKS_DB_NAME=myinhooksdb  \
+-e REDIS_URL=redis://<redis_user>:<redis_password>@<redis_host>:<redis_port> \
+--mount type=bind,source="$(pwd)"/inhooks.yml,target=/app/inhooks.yml,readonly \
+-p 3000:3000 \
+ghcr.io/didil/inhooks:v0.1.11
+```
 
 ## Usage
 ### Inhooks config
