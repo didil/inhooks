@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/didil/inhooks/compare/v0.1.10...v0.1.11) (2025-02-01)
+
+
+### Bug Fixes
+
+* fix goreleaser docker ([#65](https://github.com/didil/inhooks/issues/65)) ([ffce72c](https://github.com/didil/inhooks/commit/ffce72c362881dd9e1f695e5219cb8a7e2f2577f))
+
 ## [0.1.10](https://github.com/didil/inhooks/compare/v0.1.9...v0.1.10) (2025-01-24)
 
 
