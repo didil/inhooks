@@ -1,0 +1,7 @@
+FROM alpine:3.21
+
+WORKDIR /app
+
+COPY inhooks /app/api
+
+CMD ["/app/api"]

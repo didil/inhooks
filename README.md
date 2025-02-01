@@ -43,7 +43,7 @@ tar -xvzf inhooks_${INHOOKS_VERSION}_${OS}_${ARCH}.tar.gz
 ```
 
 ## Docker images:
-The docker images are available at:
+The released docker images are available at:
 
 
 ## Usage
