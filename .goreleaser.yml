@@ -26,13 +26,15 @@ archives:
       - CHANGELOG.md
 
 dockers:
-  - image_templates:
+  - dockerfile: Dockerfile-goreleaser
+    image_templates:
       - "ghcr.io/didil/inhooks:{{ .Tag }}-amd64"
     use: buildx
     build_flag_templates:
       - "--pull"
       - "--platform=linux/amd64"
-  - image_templates:
+  - dockerfile: Dockerfile-goreleaser
+    image_templates:
       - "ghcr.io/didil/inhooks:{{ .Tag }}-arm64"
     use: buildx
     build_flag_templates:
