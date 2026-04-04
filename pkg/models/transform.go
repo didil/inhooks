@@ -11,9 +11,10 @@ var TransformTypes = []TransformType{
 }
 
 type TransformDefinition struct {
-	ID     string        `yaml:"id"`
-	Type   TransformType `yaml:"type"`
-	Script string        `yaml:"script"`
+	ID         string        `yaml:"id"`
+	Type       TransformType `yaml:"type"`
+	Script     string        `yaml:"script"`
+	ScriptPath string        `yaml:"script_path"`
 }
 
 type Transform struct {

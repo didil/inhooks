@@ -1,7 +1,6 @@
-
 services:
   redis:
-    image: redis:7.4.2
+    image: redis:8.6.2
     volumes:
       - redis-data:/data
     ports:
