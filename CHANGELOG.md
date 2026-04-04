@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.12](https://github.com/didil/inhooks/compare/v0.1.11...v0.1.12) (2026-04-04)
+
+
+### Features
+
+* load transform script from path ([#70](https://github.com/didil/inhooks/issues/70)) ([0423114](https://github.com/didil/inhooks/commit/0423114623b5ae5c50f7bb6b5ac5db267876cbe5))
+
 ## [0.1.11](https://github.com/didil/inhooks/compare/v0.1.10...v0.1.11) (2025-02-01)
 
 
