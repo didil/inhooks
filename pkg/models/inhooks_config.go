@@ -3,9 +3,11 @@ package models
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"regexp"
 
 	"github.com/didil/inhooks/pkg/lib"
+	"github.com/pkg/errors"
 	"golang.org/x/exp/slices"
 )
 
@@ -44,6 +46,14 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 				return fmt.Errorf("transform ids must be unique. duplicate transform id: %s", transform.ID)
 			}
 			transformIDs[transform.ID] = true
+
+			if transform.ScriptPath != "" {
+				scriptBytes, err := os.ReadFile(transform.ScriptPath)
+				if err != nil {
+					return errors.Wrapf(err, "transform script path file read error")
+				}
+				transform.Script = string(scriptBytes)
+			}
 
 			if transform.Script == "" {
 				return fmt.Errorf("transform script cannot be empty")

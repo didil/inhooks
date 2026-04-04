@@ -161,6 +161,8 @@ transform_definitions:
 
         return [JSON.stringify(body), headers];
       }
+#  alternatively, you can provide the script path
+#   script_path: /path/to/script.js
 ```
 
 

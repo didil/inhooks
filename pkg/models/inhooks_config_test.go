@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -70,6 +71,84 @@ func TestValidateInhooksConfig_OK(t *testing.T) {
 	}
 
 	assert.NoError(t, ValidateInhooksConfig(appConf, c))
+}
+
+func TestValidateInhooksConfig_OK_ScriptPath(t *testing.T) {
+	ctx := context.Background()
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	delay := 12 * time.Minute
+	var hmacAlgorithm HMACAlgorithm = HMACAlgorithmSHA256
+
+	f, err := os.CreateTemp("", "my_inhooks_script.js")
+	assert.NoError(t, err)
+	defer os.Remove(f.Name())
+
+	scriptPath := f.Name()
+
+	script := `function transform(bodyStr, headers) { return [JSON.stringify(body), headers]; }`
+	_, err = f.WriteString(script)
+	assert.NoError(t, err)
+
+	err = f.Close()
+	assert.NoError(t, err)
+
+	c := &InhooksConfig{
+		Flows: []*Flow{
+			{
+				ID: "flow-1",
+				Source: &Source{
+					ID:   "source-1",
+					Slug: "source-1-slug",
+					Type: "http",
+				},
+				Sinks: []*Sink{
+					{
+						ID:    "sink-1",
+						Type:  "http",
+						URL:   "https://example.com/sink",
+						Delay: &delay,
+						Transform: &Transform{
+							ID: "js-transform-1",
+						},
+					},
+				},
+			},
+			{
+				ID: "flow-2",
+				Source: &Source{
+					ID:   "source-2",
+					Slug: "source-2-slug",
+					Type: "http",
+					Verification: &Verification{
+						VerificationType:    VerificationTypeHMAC,
+						HMACAlgorithm:       &hmacAlgorithm,
+						SignatureHeader:     "x-my-header",
+						CurrentSecretEnvVar: "FLOW_2_VERIFICATION_SECRET",
+					},
+				},
+				Sinks: []*Sink{
+					{
+						ID:   "sink-1",
+						Type: "http",
+						URL:  "https://example.com/sink",
+					},
+				},
+			},
+		},
+		TransformDefinitions: []*TransformDefinition{
+			{
+				ID:         "js-transform-1",
+				Type:       TransformTypeJavascript,
+				ScriptPath: scriptPath,
+			},
+		},
+	}
+
+	assert.NoError(t, ValidateInhooksConfig(appConf, c))
+
+	assert.Equal(t, script, c.TransformDefinitions[0].Script)
 }
 
 func TestValidateInhooksConfig_NoFlows(t *testing.T) {

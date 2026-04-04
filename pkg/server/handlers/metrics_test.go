@@ -28,7 +28,7 @@ func TestHandleMetrics(t *testing.T) {
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "text/plain; version=0.0.4; charset=utf-8; escaping=values", resp.Header.Get("Content-Type"))
+	assert.Equal(t, "text/plain; version=0.0.4; charset=utf-8; escaping=underscores", resp.Header.Get("Content-Type"))
 	body, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
