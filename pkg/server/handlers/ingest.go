@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/didil/inhooks/pkg/models"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -23,10 +22,9 @@ var enqueuedMessagesCounter = promauto.NewCounter(prometheus.CounterOpts{
 	Help: "Number of enqueued messages",
 })
 
-func (app *App) HandleIngest(w http.ResponseWriter, r *http.Request) {
+func (app *App) Ingest(w http.ResponseWriter, r *http.Request, sourceSlug string) {
 	ctx := r.Context()
 	reqID := middleware.GetReqID(ctx)
-	sourceSlug := chi.URLParam(r, "sourceSlug")
 	logger := app.logger.With(zap.String("reqID", reqID), zap.String("sourceSlug", sourceSlug))
 
 	logger.Info("new ingest request")

@@ -8,9 +8,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func (app *App) HandleMetrics(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	reqID := middleware.GetReqID(ctx)
+func (app *App) Metrics(w http.ResponseWriter, r *http.Request) {
+	reqID := middleware.GetReqID(r.Context())
 	logger := app.logger.With(zap.String("reqID", reqID))
 
 	logger.Info("new metrics request")

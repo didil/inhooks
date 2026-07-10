@@ -21,7 +21,7 @@ type TransformResponse struct {
 	Headers map[string][]string `json:"headers"`
 }
 
-func (app *App) HandleTransform(w http.ResponseWriter, r *http.Request) {
+func (app *App) Transform(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	reqID := middleware.GetReqID(ctx)
 	logger := app.logger.With(zap.String("reqID", reqID))
