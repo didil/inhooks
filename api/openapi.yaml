@@ -1,0 +1,163 @@
+openapi: "3.0.3"
+info:
+  title: Inhooks API
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3000/api/v1
+
+paths:
+  /ingest/{sourceSlug}:
+    post:
+      operationId: ingest
+      summary: Ingest a webhook message
+      tags:
+        - ingest
+      parameters:
+        - name: sourceSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '200':
+          description: Ingest successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        '404':
+          description: Source not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /transform:
+    post:
+      operationId: transform
+      summary: Transform a message
+      tags:
+        - transform
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransformRequest'
+      responses:
+        '200':
+          description: Transform successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransformResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /metrics:
+    get:
+      operationId: metrics
+      summary: Get Prometheus metrics
+      tags:
+        - metrics
+      responses:
+        '200':
+          description: Metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  schemas:
+    EmptyResponse:
+      type: object
+      properties: {}
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+        reqID:
+          type: string
+          nullable: true
+
+    IngestRequest:
+      type: object
+      properties: {}
+
+    TransformRequest:
+      type: object
+      required:
+        - body
+        - transformDefinition
+      properties:
+        body:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        transformDefinition:
+          $ref: '#/components/schemas/TransformDefinition'
+
+    TransformResponse:
+      type: object
+      properties:
+        body:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    TransformDefinition:
+      type: object
+      required:
+        - type
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - javascript
+        script:
+          type: string
+        scriptPath:
+          type: string

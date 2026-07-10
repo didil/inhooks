@@ -28,5 +28,9 @@ run-dev:
 gen-mocks:
 	pkg/testsupport/mocks/gen_mocks.sh
 
+.PHONY: gen-api
+gen-api:
+	go generate api/generate.go
+
 goreleaser-snapshot:
 	goreleaser --snapshot --clean

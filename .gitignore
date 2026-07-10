@@ -76,3 +76,5 @@ dist/
 
 # go -coverprofile
 coverprofile.txt
+
+mydocs/
