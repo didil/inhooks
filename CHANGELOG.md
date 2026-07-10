@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/didil/inhooks/compare/v0.1.12...v0.1.13) (2026-07-10)
+
+
+### Features
+
+* generate api from openapi docs ([#73](https://github.com/didil/inhooks/issues/73)) ([060285b](https://github.com/didil/inhooks/commit/060285bd046328e3bcf4513cab2a58042f7444e8))
+
 ## [0.1.12](https://github.com/didil/inhooks/compare/v0.1.11...v0.1.12) (2026-04-04)
 
 
