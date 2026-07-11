@@ -22,6 +22,7 @@ type Supervisor struct {
 	processingRecoverySvc services.ProcessingRecoveryService
 	cleanupSvc            services.CleanupService
 	messageTransformer    services.MessageTransformer
+	queueMetricsSvc       services.QueueMetricsService
 }
 
 type SupervisorOpt func(s *Supervisor)
@@ -100,6 +101,12 @@ func WithMessageTransformer(messageTransformer services.MessageTransformer) Supe
 	}
 }
 
+func WithQueueMetricsService(queueMetricsSvc services.QueueMetricsService) SupervisorOpt {
+	return func(s *Supervisor) {
+		s.queueMetricsSvc = queueMetricsSvc
+	}
+}
+
 func (s *Supervisor) Start() {
 	wg := &sync.WaitGroup{}
 	flows := s.inhooksConfigSvc.GetFlows()
@@ -110,7 +117,7 @@ func (s *Supervisor) Start() {
 			sink := f.Sinks[j]
 			logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
 
-			wg.Add(4)
+			wg.Add(5)
 
 			go func() {
 				s.HandleProcessingQueue(f, sink)
@@ -133,6 +140,12 @@ func (s *Supervisor) Start() {
 			go func() {
 				s.HandleDoneQueue(f, sink)
 				logger.Info("done queue handler shutdown")
+				wg.Done()
+			}()
+
+			go func() {
+				s.HandleQueueMetrics(f, sink)
+				logger.Info("queue metrics handler shutdown")
 				wg.Done()
 			}()
 		}

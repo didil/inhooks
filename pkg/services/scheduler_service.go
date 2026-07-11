@@ -38,8 +38,8 @@ func (s *schedulerService) MoveDueScheduled(ctx context.Context, f *models.Flow,
 	// move message ids in chunks
 	chunkSize := 50
 	mIDChunks := lib.ChunkSliceBy(mIDs, chunkSize)
-
 	sourceQueueKey := queueKey(f.ID, sink.ID, models.QueueStatusScheduled)
+
 	destQueueKey := queueKey(f.ID, sink.ID, models.QueueStatusReady)
 
 	for i := 0; i < len(mIDChunks); i++ {

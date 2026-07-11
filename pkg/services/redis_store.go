@@ -25,6 +25,8 @@ type RedisStore interface {
 	LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error
 	ZRemRangeBelowScore(ctx context.Context, queueKey string, maxScore int) (int, error)
 	ZRemDel(ctx context.Context, queueKey string, messageIDs []string, messageKeys []string) error
+	LLen(ctx context.Context, queueKey string) (int64, error)
+	ZCard(ctx context.Context, queueKey string) (int64, error)
 }
 
 type redisStore struct {
@@ -287,4 +289,26 @@ func (s *redisStore) ZRemDel(ctx context.Context, queueKey string, messageIDs []
 	}
 
 	return nil
+}
+
+func (s *redisStore) LLen(ctx context.Context, queueKey string) (int64, error) {
+	queueKeyWithPrefix := s.keyWithPrefix(queueKey)
+
+	length, err := s.client.LLen(ctx, queueKeyWithPrefix).Result()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to llen. queueKey: %s", queueKeyWithPrefix)
+	}
+
+	return length, nil
+}
+
+func (s *redisStore) ZCard(ctx context.Context, queueKey string) (int64, error) {
+	queueKeyWithPrefix := s.keyWithPrefix(queueKey)
+
+	count, err := s.client.ZCard(ctx, queueKeyWithPrefix).Result()
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to zcard. queueKey: %s", queueKeyWithPrefix)
+	}
+
+	return count, nil
 }

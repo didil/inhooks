@@ -13,7 +13,9 @@ test:
 	go test -race ./...
 
 test-coverage:
-	go test -race -covermode atomic -coverprofile=coverprofile.txt ./...
+	go test -race -covermode atomic -coverprofile=coverprofile.txt.tmp ./...
+	grep -v -E "mock_" coverprofile.txt.tmp > coverprofile.txt
+	rm coverprofile.txt.tmp
 
 lint:
 	$(MYGOBIN)/golangci-lint run

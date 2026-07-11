@@ -94,6 +94,21 @@ func (mr *MockRedisStoreMockRecorder) Get(ctx, messageKey interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockRedisStore)(nil).Get), ctx, messageKey)
 }
 
+// LLen mocks base method.
+func (m *MockRedisStore) LLen(ctx context.Context, queueKey string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LLen", ctx, queueKey)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LLen indicates an expected call of LLen.
+func (mr *MockRedisStoreMockRecorder) LLen(ctx, queueKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LLen", reflect.TypeOf((*MockRedisStore)(nil).LLen), ctx, queueKey)
+}
+
 // LRangeAll mocks base method.
 func (m *MockRedisStore) LRangeAll(ctx context.Context, queueKey string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -177,6 +192,21 @@ func (m *MockRedisStore) SetLRemZAdd(ctx context.Context, messageKey string, val
 func (mr *MockRedisStoreMockRecorder) SetLRemZAdd(ctx, messageKey, value, sourceQueueKey, destQueueKey, messageID, score interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLRemZAdd", reflect.TypeOf((*MockRedisStore)(nil).SetLRemZAdd), ctx, messageKey, value, sourceQueueKey, destQueueKey, messageID, score)
+}
+
+// ZCard mocks base method.
+func (m *MockRedisStore) ZCard(ctx context.Context, queueKey string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ZCard", ctx, queueKey)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ZCard indicates an expected call of ZCard.
+func (mr *MockRedisStoreMockRecorder) ZCard(ctx, queueKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ZCard", reflect.TypeOf((*MockRedisStore)(nil).ZCard), ctx, queueKey)
 }
 
 // ZRangeBelowScore mocks base method.
