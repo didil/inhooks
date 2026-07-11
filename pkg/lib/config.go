@@ -44,6 +44,8 @@ type SupervisorConfig struct {
 	DoneQueueCleanupDelay time.Duration `env:"SUPERVISOR_DONE_QUEUE_CLEANUP_DELAY,default=336h"`
 	// interval between done queue cleanup runs
 	DoneQueueCleanupInterval time.Duration `env:"SUPERVISOR_DONE_QUEUE_CLEANUP_INTERVAL,default=60m"`
+	// interval between queue metrics collection runs
+	QueueMetricsInterval time.Duration `env:"SUPERVISOR_QUEUE_METRICS_INTERVAL,default=30s"`
 }
 
 type HTTPClientConfig struct {

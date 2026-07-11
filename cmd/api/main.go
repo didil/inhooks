@@ -123,6 +123,8 @@ func main() {
 
 	cleanupSvc := services.NewCleanupService(redisStore, timeSvc)
 
+	queueMetricsSvc := services.NewQueueMetricsService(redisStore)
+
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
 		supervisor.WithMessageFetcher(messageFetcher),
@@ -134,6 +136,7 @@ func main() {
 		supervisor.WithProcessingRecoveryService(processingRecoverySvc),
 		supervisor.WithCleanupService(cleanupSvc),
 		supervisor.WithMessageTransformer(messageTransformer),
+		supervisor.WithQueueMetricsService(queueMetricsSvc),
 	)
 
 	wg.Add(1)

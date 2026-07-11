@@ -15,6 +15,7 @@ services=(
     "cleanup_service"
     "message_verifier"
     "message_transformer"
+    "queue_metrics_service"
 )
 
 for service in ${services[@]}

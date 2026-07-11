@@ -525,3 +525,72 @@ func (s *RedisStoreSuite) TestZRemDel() {
 	s.Equal([]string{"message-2", "message-4"}, queueResults)
 
 }
+
+func (s *RedisStoreSuite) TestLLen() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	queueKey := "q:processing"
+
+	length, err := s.redisStore.LLen(ctx, queueKey)
+	s.NoError(err)
+	s.Equal(int64(0), length)
+
+	value1 := []byte(`{"id": 123}`)
+	value2 := []byte(`{"id": 456}`)
+
+	err = s.redisStore.Enqueue(ctx, queueKey, value1)
+	s.NoError(err)
+
+	length, err = s.redisStore.LLen(ctx, queueKey)
+	s.NoError(err)
+	s.Equal(int64(1), length)
+
+	err = s.redisStore.Enqueue(ctx, queueKey, value2)
+	s.NoError(err)
+
+	length, err = s.redisStore.LLen(ctx, queueKey)
+	s.NoError(err)
+	s.Equal(int64(2), length)
+}
+
+func (s *RedisStoreSuite) TestZCard() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	queueKey := "q:scheduled"
+	queueKeyWithPrefix := fmt.Sprintf("%s:%s", prefix, queueKey)
+
+	count, err := s.redisStore.ZCard(ctx, queueKey)
+	s.NoError(err)
+	s.Equal(int64(0), count)
+
+	m1ID := "message-1"
+	m2ID := "message-2"
+	m3ID := "message-3"
+
+	_, err = s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: 100, Member: m1ID}).Result()
+	s.NoError(err)
+
+	count, err = s.redisStore.ZCard(ctx, queueKey)
+	s.NoError(err)
+	s.Equal(int64(1), count)
+
+	_, err = s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: 200, Member: m2ID}).Result()
+	s.NoError(err)
+
+	_, err = s.client.ZAdd(ctx, queueKeyWithPrefix, redis.Z{Score: 300, Member: m3ID}).Result()
+	s.NoError(err)
+
+	count, err = s.redisStore.ZCard(ctx, queueKey)
+	s.NoError(err)
+	s.Equal(int64(3), count)
+}
