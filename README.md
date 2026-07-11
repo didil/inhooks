@@ -94,6 +94,52 @@ Copy the .env examples to init the .env file and update as needed (to set the in
 cp .env.example .env
 ```
 
+#### All env vars
+
+| Category | Env var | Default | Description |
+|---|---|---|---|
+| **App** | `APP_ENV` | | Application environment (development, test, production) |
+| | `INHOOKS_CONFIG_FILE` | `inhooks.yml` | Path to the flows config file |
+| **Server** | `HOST` | `localhost` | Server bind host |
+| | `PORT` | `3000` | Server bind port |
+| | `SERVER_SHUTDOWN_GRACE_PERIOD` | `5s` | Graceful shutdown timeout |
+| **Redis** | `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
+| | `REDIS_INHOOKS_DB_NAME` | | **Required.** Redis key prefix namespace |
+| **Supervisor** | `SUPERVISOR_READY_WAIT_TIME` | `5s` | Delay before processing a newly enqueued message |
+| | `SUPERVISOR_READY_QUEUE_CONCURRENCY` | `5` | Number of concurrent message processing goroutines |
+| | `SUPERVISOR_ERR_SLEEP_TIME` | `5s` | Sleep time on processing error |
+| | `SUPERVISOR_SCHEDULER_INTERVAL` | `30s` | Interval between scheduler runs |
+| | `SUPERVISOR_PROCESSING_RECOVERY_INTERVAL` | `5m` | Interval to recover stuck processing messages |
+| | `SUPERVISOR_QUEUE_METRICS_INTERVAL` | `30s` | Interval between queue metrics collection |
+| | `SUPERVISOR_DONE_QUEUE_CLEANUP_ENABLED` | `false` | Enable automatic done queue cleanup |
+| | `SUPERVISOR_DONE_QUEUE_CLEANUP_DELAY` | `336h` (14 days) | Age threshold for done message deletion |
+| | `SUPERVISOR_DONE_QUEUE_CLEANUP_INTERVAL` | `60m` | Interval between done queue cleanup runs |
+| | `SUPERVISOR_DEAD_QUEUE_CLEANUP_ENABLED` | `false` | Enable automatic dead queue cleanup |
+| | `SUPERVISOR_DEAD_QUEUE_CLEANUP_DELAY` | `336h` (14 days) | Age threshold for dead message deletion |
+| | `SUPERVISOR_DEAD_QUEUE_CLEANUP_INTERVAL` | `70m` | Interval between dead queue cleanup runs |
+| **HTTP Client** | `HTTP_CLIENT_TIMEOUT` | `5s` | Timeout for outbound HTTP requests to sinks |
+| **Sink** | `SINK_DEFAULT_DELAY` | `0` | Default delay before processing a message |
+| | `SINK_DEFAULT_MAX_ATTEMPTS` | `3` | Default max delivery attempts per message |
+| | `SINK_DEFAULT_RETRY_AFTER` | `0` | Default retry interval |
+| | `SINK_DEFAULT_RETRY_EXP_MULTIPLIER` | `1` | Default retry exponential backoff multiplier |
+| **Transform** | `TRANSFORM_JAVASCRIPT_TIMEOUT` | `1s` | Timeout for JavaScript transform execution |
+
+### Queue cleanup
+Inhooks can automatically delete old messages from the **done** and **dead** queues. Both cleanup features are **disabled by default** to prevent accidental data loss.
+
+**Done queue cleanup** removes messages that have been successfully delivered and are older than the configured delay.
+
+**Dead queue cleanup** removes messages that have exhausted all delivery attempts and are older than the configured delay. The age is determined from the timestamp of the message's last delivery attempt.
+
+To enable, set the corresponding env vars:
+```shell
+SUPERVISOR_DONE_QUEUE_CLEANUP_ENABLED=true
+SUPERVISOR_DONE_QUEUE_CLEANUP_DELAY=336h  # 14 days (default)
+
+SUPERVISOR_DEAD_QUEUE_CLEANUP_ENABLED=true
+SUPERVISOR_DEAD_QUEUE_CLEANUP_DELAY=336h  # 14 days (default)
+```
+
 ### Securing webhooks
 If you would like to verify your webhooks with HMAC 256, you can use the following configuration:
 

@@ -124,6 +124,20 @@ func (mr *MockRedisStoreMockRecorder) LRangeAll(ctx, queueKey interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LRangeAll", reflect.TypeOf((*MockRedisStore)(nil).LRangeAll), ctx, queueKey)
 }
 
+// LRemDel mocks base method.
+func (m *MockRedisStore) LRemDel(ctx context.Context, sourceQueueKey string, messageIDs, messageKeys []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LRemDel", ctx, sourceQueueKey, messageIDs, messageKeys)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LRemDel indicates an expected call of LRemDel.
+func (mr *MockRedisStoreMockRecorder) LRemDel(ctx, sourceQueueKey, messageIDs, messageKeys interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LRemDel", reflect.TypeOf((*MockRedisStore)(nil).LRemDel), ctx, sourceQueueKey, messageIDs, messageKeys)
+}
+
 // LRemRPush mocks base method.
 func (m *MockRedisStore) LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error {
 	m.ctrl.T.Helper()
@@ -136,6 +150,21 @@ func (m *MockRedisStore) LRemRPush(ctx context.Context, sourceQueueKey, destQueu
 func (mr *MockRedisStoreMockRecorder) LRemRPush(ctx, sourceQueueKey, destQueueKey, messageIDs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LRemRPush", reflect.TypeOf((*MockRedisStore)(nil).LRemRPush), ctx, sourceQueueKey, destQueueKey, messageIDs)
+}
+
+// MultiGet mocks base method.
+func (m *MockRedisStore) MultiGet(ctx context.Context, keys []string) (map[string][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MultiGet", ctx, keys)
+	ret0, _ := ret[0].(map[string][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MultiGet indicates an expected call of MultiGet.
+func (mr *MockRedisStoreMockRecorder) MultiGet(ctx, keys interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MultiGet", reflect.TypeOf((*MockRedisStore)(nil).MultiGet), ctx, keys)
 }
 
 // SetAndEnqueue mocks base method.

@@ -24,6 +24,8 @@ type RedisStore interface {
 	LRangeAll(ctx context.Context, queueKey string) ([]string, error)
 	LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey string, messageIDs []string) error
 	ZRemRangeBelowScore(ctx context.Context, queueKey string, maxScore int) (int, error)
+	LRemDel(ctx context.Context, sourceQueueKey string, messageIDs []string, messageKeys []string) error
+	MultiGet(ctx context.Context, keys []string) (map[string][]byte, error)
 	ZRemDel(ctx context.Context, queueKey string, messageIDs []string, messageKeys []string) error
 	LLen(ctx context.Context, queueKey string) (int64, error)
 	ZCard(ctx context.Context, queueKey string) (int64, error)
@@ -256,6 +258,58 @@ func (s *redisStore) LRemRPush(ctx context.Context, sourceQueueKey, destQueueKey
 	}
 
 	return nil
+}
+
+func (s *redisStore) LRemDel(ctx context.Context, sourceQueueKey string, messageIDs []string, messageKeys []string) error {
+	pipe := s.client.TxPipeline()
+
+	sourceKeyWithPrefix := s.keyWithPrefix(sourceQueueKey)
+	for _, messageID := range messageIDs {
+		pipe.LRem(ctx, sourceKeyWithPrefix, 0, messageID)
+	}
+
+	messageKeysWithPrefix := make([]string, 0, len(messageKeys))
+	for _, messageKey := range messageKeys {
+		messageKeysWithPrefix = append(messageKeysWithPrefix, s.keyWithPrefix(messageKey))
+	}
+	pipe.Del(ctx, messageKeysWithPrefix...)
+
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *redisStore) MultiGet(ctx context.Context, keys []string) (map[string][]byte, error) {
+	pipe := s.client.Pipeline()
+
+	results := make(map[string][]byte, len(keys))
+	cmds := make([]*redis.StringCmd, len(keys))
+
+	for i, key := range keys {
+		keyWithPrefix := s.keyWithPrefix(key)
+		cmds[i] = pipe.Get(ctx, keyWithPrefix)
+	}
+
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		return nil, err
+	}
+
+	for i, cmd := range cmds {
+		val, err := cmd.Result()
+		if err != nil {
+			if err == redis.Nil {
+				continue
+			}
+			return nil, err
+		}
+		results[keys[i]] = []byte(val)
+	}
+
+	return results, nil
 }
 
 func (s *redisStore) ZRemRangeBelowScore(ctx context.Context, queueKey string, maxScore int) (int, error) {

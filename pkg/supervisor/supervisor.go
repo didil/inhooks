@@ -117,7 +117,7 @@ func (s *Supervisor) Start() {
 			sink := f.Sinks[j]
 			logger := s.logger.With(zap.String("flowID", f.ID), zap.String("sinkID", sink.ID))
 
-			wg.Add(5)
+			wg.Add(6)
 
 			go func() {
 				s.HandleProcessingQueue(f, sink)
@@ -140,6 +140,12 @@ func (s *Supervisor) Start() {
 			go func() {
 				s.HandleDoneQueue(f, sink)
 				logger.Info("done queue handler shutdown")
+				wg.Done()
+			}()
+
+			go func() {
+				s.HandleDeadQueue(f, sink)
+				logger.Info("dead queue handler shutdown")
 				wg.Done()
 			}()
 

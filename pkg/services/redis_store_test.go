@@ -594,3 +594,78 @@ func (s *RedisStoreSuite) TestZCard() {
 	s.NoError(err)
 	s.Equal(int64(3), count)
 }
+
+func (s *RedisStoreSuite) TestMultiGet() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	value1 := []byte(`{"id": 123}`)
+	value2 := []byte(`{"id": 456}`)
+
+	messageKey1 := "m:abc123"
+	messageKey2 := "m:def456"
+	messageKey3 := "m:xyz789"
+
+	err := s.redisStore.SetAndEnqueue(ctx, messageKey1, value1, "q:test", "abc123")
+	s.NoError(err)
+	err = s.redisStore.SetAndEnqueue(ctx, messageKey2, value2, "q:test", "def456")
+	s.NoError(err)
+
+	// fetch two existing keys and one non-existing key
+	keys := []string{messageKey1, messageKey2, messageKey3}
+	vals, err := s.redisStore.MultiGet(ctx, keys)
+	s.NoError(err)
+
+	s.Equal(2, len(vals))
+	s.Equal(value1, vals[messageKey1])
+	s.Equal(value2, vals[messageKey2])
+	_, exists := vals[messageKey3]
+	s.False(exists)
+}
+
+func (s *RedisStoreSuite) TestLRemDel() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	value1 := []byte(`{"id": 123}`)
+	value2 := []byte(`{"id": 456}`)
+
+	queueKey := "q:dead"
+	messageKey1 := "m:abc123"
+	messageKey2 := "m:def456"
+
+	err := s.redisStore.SetAndEnqueue(ctx, messageKey1, value1, queueKey, "abc123")
+	s.NoError(err)
+	err = s.redisStore.SetAndEnqueue(ctx, messageKey2, value2, queueKey, "def456")
+	s.NoError(err)
+
+	queueResults, err := s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKey), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"abc123", "def456"}, queueResults)
+
+	// remove abc123 from queue and delete its message key
+	err = s.redisStore.LRemDel(ctx, queueKey, []string{"abc123"}, []string{messageKey1})
+	s.NoError(err)
+
+	queueResults, err = s.client.LRange(ctx, fmt.Sprintf("%s:%s", prefix, queueKey), 0, -1).Result()
+	s.NoError(err)
+	s.Equal([]string{"def456"}, queueResults)
+
+	// message key for abc123 should be deleted
+	val, err := s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey1)).Result()
+	s.Error(err) // key should not exist
+	s.Equal("", val)
+
+	// message key for def456 should still exist
+	val, err = s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey2)).Result()
+	s.NoError(err)
+	s.Equal(string(value2), val)
+}
