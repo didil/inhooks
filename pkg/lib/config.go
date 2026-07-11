@@ -44,6 +44,12 @@ type SupervisorConfig struct {
 	DoneQueueCleanupDelay time.Duration `env:"SUPERVISOR_DONE_QUEUE_CLEANUP_DELAY,default=336h"`
 	// interval between done queue cleanup runs
 	DoneQueueCleanupInterval time.Duration `env:"SUPERVISOR_DONE_QUEUE_CLEANUP_INTERVAL,default=60m"`
+	// enables deleting dead messages from the database after DeadQueueCleanupDelay
+	DeadQueueCleanupEnabled bool `env:"SUPERVISOR_DEAD_QUEUE_CLEANUP_ENABLED,default=false"`
+	// delay after which dead messages are deleted from the database. Default 14 days = 336 hours
+	DeadQueueCleanupDelay time.Duration `env:"SUPERVISOR_DEAD_QUEUE_CLEANUP_DELAY,default=336h"`
+	// interval between dead queue cleanup runs
+	DeadQueueCleanupInterval time.Duration `env:"SUPERVISOR_DEAD_QUEUE_CLEANUP_INTERVAL,default=70m"`
 	// interval between queue metrics collection runs
 	QueueMetricsInterval time.Duration `env:"SUPERVISOR_QUEUE_METRICS_INTERVAL,default=30s"`
 }

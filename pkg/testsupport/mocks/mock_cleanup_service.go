@@ -36,6 +36,21 @@ func (m *MockCleanupService) EXPECT() *MockCleanupServiceMockRecorder {
 	return m.recorder
 }
 
+// CleanupDeadQueue mocks base method.
+func (m *MockCleanupService) CleanupDeadQueue(ctx context.Context, f *models.Flow, sink *models.Sink, deadQueueCleanupDelay time.Duration) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CleanupDeadQueue", ctx, f, sink, deadQueueCleanupDelay)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CleanupDeadQueue indicates an expected call of CleanupDeadQueue.
+func (mr *MockCleanupServiceMockRecorder) CleanupDeadQueue(ctx, f, sink, deadQueueCleanupDelay interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanupDeadQueue", reflect.TypeOf((*MockCleanupService)(nil).CleanupDeadQueue), ctx, f, sink, deadQueueCleanupDelay)
+}
+
 // CleanupDoneQueue mocks base method.
 func (m *MockCleanupService) CleanupDoneQueue(ctx context.Context, f *models.Flow, sink *models.Sink, doneQueueCleanupDelay time.Duration) (int, error) {
 	m.ctrl.T.Helper()
