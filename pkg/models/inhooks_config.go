@@ -159,6 +159,13 @@ func ValidateInhooksConfig(appConf *lib.AppConfig, c *InhooksConfig) error {
 					return fmt.Errorf("transform id not found: %s", sink.Transform.ID)
 				}
 			}
+
+			// validate rate limit
+			if sink.RateLimit != nil {
+				if err := sink.RateLimit.Validate(); err != nil {
+					return fmt.Errorf("flows[%d].sinks[%d].%w", i, j, err)
+				}
+			}
 		}
 	}
 

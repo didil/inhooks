@@ -29,4 +29,6 @@ type Sink struct {
 	MaxAttempts *int `yaml:"maxAttempts"`
 	// Transform to apply to the data
 	Transform *Transform `yaml:"transform"`
+	// Outbound rate limit (token bucket). Optional.
+	RateLimit *RateLimitConfig `yaml:"rateLimit,omitempty"`
 }

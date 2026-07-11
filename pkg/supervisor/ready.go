@@ -2,9 +2,11 @@ package supervisor
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/didil/inhooks/pkg/models"
+	"github.com/didil/inhooks/pkg/services"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -65,6 +67,11 @@ var messageProcessingFailureCounter = promauto.NewCounter(prometheus.CounterOpts
 	Help: "Number of failed message processing",
 })
 
+var rateLimitRescheduleCounter = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "message_rate_limit_reschedule_total",
+	Help: "Number of messages rescheduled due to rate limiting",
+})
+
 func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, sink *models.Sink, mChan chan *models.Message) {
 	for {
 		select {
@@ -78,6 +85,24 @@ func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, si
 				zap.String("messageID", m.ID),
 				zap.String("ingestedReqID", m.IngestedReqID),
 			)
+
+			if sink.RateLimit != nil && s.rateLimiter != nil {
+				rlKey := fmt.Sprintf("rl:sink:%s:%s", f.ID, sink.ID)
+				decision := s.rateLimiter.Allow(ctx, rlKey, sink.RateLimit)
+				services.DecisionsTotal.WithLabelValues(f.ID, sink.ID, decisionLabel(decision.Allowed)).Inc()
+				services.TokensRemaining.WithLabelValues(f.ID, sink.ID).Set(decision.Remaining)
+				if !decision.Allowed {
+					logger.Info("rate limited, rescheduling", zap.Duration("retryAfter", decision.RetryAfter))
+					queuedInfo, err := s.processingResultsSvc.RescheduleForRateLimit(ctx, sink, m, decision.RetryAfter)
+					if err != nil {
+						logger.Error("could not reschedule for rate limit", zap.Error(err))
+						continue
+					}
+					logger.Info("message rescheduled for rate limit", zap.String("queue", string(queuedInfo.QueueStatus)), zap.Time("nextAttemptAfter", queuedInfo.DeliverAfter))
+					rateLimitRescheduleCounter.Inc()
+					continue
+				}
+			}
 
 			if sink.Transform != nil {
 				transformDefinition := s.inhooksConfigSvc.GetTransformDefinition(sink.Transform.ID)
@@ -120,4 +145,11 @@ func (s *Supervisor) startReadyProcessor(ctx context.Context, f *models.Flow, si
 			}
 		}
 	}
+}
+
+func decisionLabel(allowed bool) string {
+	if allowed {
+		return "allowed"
+	}
+	return "denied"
 }

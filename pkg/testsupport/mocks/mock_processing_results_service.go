@@ -7,6 +7,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	models "github.com/didil/inhooks/pkg/models"
 	gomock "github.com/golang/mock/gomock"
@@ -62,4 +63,19 @@ func (m_2 *MockProcessingResultsService) HandleOK(ctx context.Context, m *models
 func (mr *MockProcessingResultsServiceMockRecorder) HandleOK(ctx, m interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleOK", reflect.TypeOf((*MockProcessingResultsService)(nil).HandleOK), ctx, m)
+}
+
+// RescheduleForRateLimit mocks base method.
+func (m_2 *MockProcessingResultsService) RescheduleForRateLimit(ctx context.Context, sink *models.Sink, m *models.Message, delay time.Duration) (*models.QueuedInfo, error) {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RescheduleForRateLimit", ctx, sink, m, delay)
+	ret0, _ := ret[0].(*models.QueuedInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RescheduleForRateLimit indicates an expected call of RescheduleForRateLimit.
+func (mr *MockProcessingResultsServiceMockRecorder) RescheduleForRateLimit(ctx, sink, m, delay interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RescheduleForRateLimit", reflect.TypeOf((*MockProcessingResultsService)(nil).RescheduleForRateLimit), ctx, sink, m, delay)
 }

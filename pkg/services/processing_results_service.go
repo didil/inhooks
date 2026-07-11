@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/didil/inhooks/pkg/models"
 	"github.com/pkg/errors"
@@ -12,6 +13,7 @@ import (
 type ProcessingResultsService interface {
 	HandleFailed(ctx context.Context, sink *models.Sink, m *models.Message, processingErr error) (*models.QueuedInfo, error)
 	HandleOK(ctx context.Context, m *models.Message) error
+	RescheduleForRateLimit(ctx context.Context, sink *models.Sink, m *models.Message, delay time.Duration) (*models.QueuedInfo, error)
 }
 
 type processingResultsService struct {
@@ -111,4 +113,24 @@ func (s *processingResultsService) HandleOK(ctx context.Context, m *models.Messa
 	}
 
 	return nil
+}
+
+func (s *processingResultsService) RescheduleForRateLimit(ctx context.Context, sink *models.Sink, m *models.Message, delay time.Duration) (*models.QueuedInfo, error) {
+	m.DeliverAfter = s.timeSvc.Now().Add(delay)
+
+	mKey := messageKey(m.FlowID, m.SinkID, m.ID)
+	sourceQueueKey := queueKey(m.FlowID, m.SinkID, models.QueueStatusProcessing)
+	destQueueKey := queueKey(m.FlowID, m.SinkID, models.QueueStatusScheduled)
+
+	b, err := json.Marshal(&m)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to encode message")
+	}
+
+	err = s.redisStore.SetLRemZAdd(ctx, mKey, b, sourceQueueKey, destQueueKey, m.ID, float64(m.DeliverAfter.Unix()))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to reschedule for rate limit")
+	}
+
+	return &models.QueuedInfo{MessageID: m.ID, QueueStatus: models.QueueStatusScheduled, DeliverAfter: m.DeliverAfter}, nil
 }

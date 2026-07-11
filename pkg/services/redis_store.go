@@ -29,6 +29,7 @@ type RedisStore interface {
 	ZRemDel(ctx context.Context, queueKey string, messageIDs []string, messageKeys []string) error
 	LLen(ctx context.Context, queueKey string) (int64, error)
 	ZCard(ctx context.Context, queueKey string) (int64, error)
+	Eval(ctx context.Context, script string, keys []string, args ...interface{}) ([]interface{}, error)
 }
 
 type redisStore struct {
@@ -365,4 +366,20 @@ func (s *redisStore) ZCard(ctx context.Context, queueKey string) (int64, error) 
 	}
 
 	return count, nil
+}
+
+func (s *redisStore) Eval(ctx context.Context, script string, keys []string, args ...interface{}) ([]interface{}, error) {
+	keysWithPrefix := make([]string, len(keys))
+	for i, k := range keys {
+		keysWithPrefix[i] = s.keyWithPrefix(k)
+	}
+	res, err := s.client.Eval(ctx, script, keysWithPrefix, args...).Result()
+	if err != nil {
+		return nil, err
+	}
+	arr, ok := res.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("eval: expected array, got %T", res)
+	}
+	return arr, nil
 }

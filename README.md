@@ -159,6 +159,37 @@ flows:
         previousSecretEnvVar: VERIFICATION_FLOW_1_PREVIOUS_SECRET # optional env var that allows rotating secrets without service interruption
 ```
 
+### Rate limiting (outbound)
+You can apply per-sink outbound rate limiting using a token bucket algorithm. When the bucket is empty, the message is rescheduled for later delivery (no delivery attempt is consumed).
+
+Rate limit config is optional. If omitted, the sink has no rate limit.
+
+| Field | Description |
+|---|---|
+| `capacity` | Maximum burst size (bucket capacity) |
+| `refillRate` | Tokens added per refill interval |
+| `refillInterval` | How often tokens are refilled (Go duration, e.g. `1s`, `500ms`) |
+
+Example:
+```yaml
+flows:
+  - id: flow-1
+    source:
+      id: source-1
+      slug: source-1-slug
+      type: http
+    sinks:
+      - id: sink-1
+        type: http
+        url: https://example.com/target
+        rateLimit:
+          capacity: 100
+          refillRate: 50
+          refillInterval: 1s
+```
+
+This configuration allows a burst of up to 100 messages, then sustains 50 messages per second. Messages exceeding the rate are retried automatically after a delay.
+
 ### Message transformation
 
 #### Transform definition
@@ -238,6 +269,18 @@ curl -X POST http://localhost:3000/api/v1/transform \
 
 ### Prometheus metrics
 Inhooks exposes Prometheus metrics at the `/api/v1/metrics` endpoint.
+
+| Metric | Type | Labels | Description |
+|---|---|---|---|
+| `ingest_requests_total` | Counter | | Total ingest HTTP requests received |
+| `enqueued_messages_total` | Counter | | Total messages enqueued for processing |
+| `queue_size` | Gauge | `flow_id`, `sink_id`, `queue_status` | Current number of messages in each queue |
+| `message_processing_attempts_total` | Counter | | Total message delivery attempts |
+| `message_processing_success_total` | Counter | | Total successful deliveries |
+| `message_processing_failure_total` | Counter | | Total failed deliveries |
+| `message_rate_limit_reschedule_total` | Counter | | Total messages rescheduled due to rate limiting |
+| `rate_limit_decisions_total` | Counter | `flow_id`, `sink_id`, `decision` | Rate-limit decisions (`allowed` or `denied`) |
+| `rate_limit_tokens_remaining` | Gauge | `flow_id`, `sink_id` | Current remaining tokens in the bucket |
 
 ## Development setup
 ### Tools

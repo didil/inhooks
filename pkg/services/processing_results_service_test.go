@@ -274,3 +274,64 @@ func TestProcessingResultsServiceHandleFailed_Ready(t *testing.T) {
 	assert.Equal(t, models.QueueStatusReady, queuedInfo.QueueStatus)
 	assert.Equal(t, mUpdated.DeliverAfter, queuedInfo.DeliverAfter)
 }
+
+func TestProcessingResultsServiceRescheduleForRateLimit(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.Background()
+
+	redisStore := mocks.NewMockRedisStore(ctrl)
+	timeSvc := mocks.NewMockTimeService(ctrl)
+	retryCalculator := mocks.NewMockRetryCalculator(ctrl)
+
+	now := time.Date(2023, 05, 5, 8, 9, 12, 0, time.UTC)
+	timeSvc.EXPECT().Now().AnyTimes().Return(now)
+
+	flowID := "flow-1"
+	sinkID := "sink-1"
+	mID := "message-1"
+
+	messageKey := "f:flow-1:s:sink-1:m:message-1"
+	sourceQueueKey := "f:flow-1:s:sink-1:q:processing"
+	destQueueKey := "f:flow-1:s:sink-1:q:scheduled"
+
+	sink := &models.Sink{
+		ID:            sinkID,
+		RetryInterval: nil,
+	}
+
+	m := &models.Message{
+		ID:     mID,
+		FlowID: flowID,
+		SinkID: sinkID,
+		DeliveryAttempts: []*models.DeliveryAttempt{
+			{
+				At:     now.Add(-5 * time.Minute),
+				Status: models.DeliveryAttemptStatusFailed,
+				Error:  "some error",
+			},
+		},
+	}
+
+	delay := 30 * time.Second
+
+	mUpdated := *m
+	mUpdated.DeliverAfter = now.Add(delay)
+	// DeliveryAttempts should NOT be modified
+
+	b, err := json.Marshal(&mUpdated)
+	assert.NoError(t, err)
+
+	redisStore.EXPECT().SetLRemZAdd(ctx, messageKey, b, sourceQueueKey, destQueueKey, mID, float64(mUpdated.DeliverAfter.Unix())).Return(nil)
+
+	s := NewProcessingResultsService(timeSvc, redisStore, retryCalculator)
+	queuedInfo, err := s.RescheduleForRateLimit(ctx, sink, m, delay)
+	assert.NoError(t, err)
+	assert.Equal(t, mID, queuedInfo.MessageID)
+	assert.Equal(t, models.QueueStatusScheduled, queuedInfo.QueueStatus)
+	assert.Equal(t, mUpdated.DeliverAfter, queuedInfo.DeliverAfter)
+
+	// Verify DeliveryAttempts was NOT modified
+	assert.Len(t, m.DeliveryAttempts, 1)
+}
