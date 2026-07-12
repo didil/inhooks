@@ -79,6 +79,26 @@ func (mr *MockRedisStoreMockRecorder) Enqueue(ctx, key, value interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Enqueue", reflect.TypeOf((*MockRedisStore)(nil).Enqueue), ctx, key, value)
 }
 
+// Eval mocks base method.
+func (m *MockRedisStore) Eval(ctx context.Context, script string, keys []string, args ...interface{}) ([]interface{}, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, script, keys}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Eval", varargs...)
+	ret0, _ := ret[0].([]interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Eval indicates an expected call of Eval.
+func (mr *MockRedisStoreMockRecorder) Eval(ctx, script, keys interface{}, args ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, script, keys}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Eval", reflect.TypeOf((*MockRedisStore)(nil).Eval), varargs...)
+}
+
 // Get mocks base method.
 func (m *MockRedisStore) Get(ctx context.Context, messageKey string) ([]byte, error) {
 	m.ctrl.T.Helper()

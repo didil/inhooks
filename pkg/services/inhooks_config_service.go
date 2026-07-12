@@ -147,6 +147,7 @@ func (s *inhooksConfigService) log() {
 				zap.String("url", string(sink.URL)),
 				zap.Durationp("delay", sink.Delay),
 				zap.Any("transform", sink.Transform),
+				zap.Any("rateLimit", sink.RateLimit),
 			)
 		}
 	}

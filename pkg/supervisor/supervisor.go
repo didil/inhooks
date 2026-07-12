@@ -23,6 +23,7 @@ type Supervisor struct {
 	cleanupSvc            services.CleanupService
 	messageTransformer    services.MessageTransformer
 	queueMetricsSvc       services.QueueMetricsService
+	rateLimiter           services.RateLimiter
 }
 
 type SupervisorOpt func(s *Supervisor)
@@ -104,6 +105,12 @@ func WithMessageTransformer(messageTransformer services.MessageTransformer) Supe
 func WithQueueMetricsService(queueMetricsSvc services.QueueMetricsService) SupervisorOpt {
 	return func(s *Supervisor) {
 		s.queueMetricsSvc = queueMetricsSvc
+	}
+}
+
+func WithRateLimiter(rateLimiter services.RateLimiter) SupervisorOpt {
+	return func(s *Supervisor) {
+		s.rateLimiter = rateLimiter
 	}
 }
 

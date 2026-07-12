@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -668,4 +670,193 @@ func (s *RedisStoreSuite) TestLRemDel() {
 	val, err = s.client.Get(ctx, fmt.Sprintf("%s:%s", prefix, messageKey2)).Result()
 	s.NoError(err)
 	s.Equal(string(value2), val)
+}
+
+func (s *RedisStoreSuite) TestEval_ReturnsArray() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	script := `return {1, 2, 3}`
+	res, err := s.redisStore.Eval(ctx, script, []string{"no-key"})
+	s.NoError(err)
+	s.Len(res, 3)
+	s.Equal(int64(1), res[0])
+	s.Equal(int64(2), res[1])
+	s.Equal(int64(3), res[2])
+}
+
+func (s *RedisStoreSuite) TestEval_KeyPrefix() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	// Write to a key using the raw Redis client with prefix
+	rawKey := fmt.Sprintf("%s:%s", prefix, "eval-test-key")
+	err := s.client.Set(ctx, rawKey, "hello", 0).Err()
+	s.NoError(err)
+
+	// Eval using store — keys should be auto-prefixed
+	// Wrap in table to return an array (Eval expects []interface{})
+	script := `return {redis.call("GET", KEYS[1])}`
+	res, err := s.redisStore.Eval(ctx, script, []string{"eval-test-key"})
+	s.NoError(err)
+	s.Len(res, 1)
+	s.Equal("hello", res[0])
+}
+
+func (s *RedisStoreSuite) TestEval_Error() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	// Script that triggers a Redis error (wrong number of arguments to redis.call)
+	script := `return redis.call("GET")`
+	_, err := s.redisStore.Eval(ctx, script, []string{"some-key"})
+	s.Error(err)
+}
+
+func (s *RedisStoreSuite) TestEval_TokenBucket_DrainAndRefill() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	rawKey := fmt.Sprintf("%s:%s", prefix, "rl:sink:drain-refill")
+	s.client.Del(ctx, rawKey)
+
+	capacity := 3
+	refillRate := 2
+	refillIntervalMs := 1000
+	nowMs := time.Now().UnixMilli()
+
+	// Drain all 3 tokens
+	for i := 0; i < 3; i++ {
+		res, err := s.redisStore.Eval(ctx, tokenBucketLua, []string{"rl:sink:drain-refill"}, capacity, refillRate, refillIntervalMs, nowMs)
+		s.NoError(err)
+		s.Len(res, 3)
+		s.Equal(int64(1), res[0], "call %d should be allowed", i+1)
+	}
+
+	// 4th call should be denied
+	res, err := s.redisStore.Eval(ctx, tokenBucketLua, []string{"rl:sink:drain-refill"}, capacity, refillRate, refillIntervalMs, nowMs)
+	s.NoError(err)
+	s.Equal(int64(0), res[0])
+	retryAfterMs := res[2].(int64)
+	s.Greater(retryAfterMs, int64(0), "retry_after should be positive")
+
+	// Advance time past the refill interval and refill
+	laterMs := nowMs + int64(refillIntervalMs)
+	res, err = s.redisStore.Eval(ctx, tokenBucketLua, []string{"rl:sink:drain-refill"}, capacity, refillRate, refillIntervalMs, laterMs)
+	s.NoError(err)
+	s.Equal(int64(1), res[0], "should be allowed after refill")
+}
+
+func (s *RedisStoreSuite) TestEval_TokenBucket_CapacityCap() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	rawKey := fmt.Sprintf("%s:%s", prefix, "rl:sink:cap")
+	s.client.Del(ctx, rawKey)
+
+	capacity := 5
+	refillRate := 100 // large refill
+	refillIntervalMs := 1000
+	nowMs := time.Now().UnixMilli()
+
+	// Consume all tokens
+	for i := 0; i < capacity; i++ {
+		res, err := s.redisStore.Eval(ctx, tokenBucketLua, []string{"rl:sink:cap"}, capacity, refillRate, refillIntervalMs, nowMs)
+		s.NoError(err)
+		s.Equal(int64(1), res[0])
+	}
+
+	// Advance time significantly — refill should be capped at capacity
+	laterMs := nowMs + int64(refillIntervalMs)*100
+	res, err := s.redisStore.Eval(ctx, tokenBucketLua, []string{"rl:sink:cap"}, capacity, refillRate, refillIntervalMs, laterMs)
+	s.NoError(err)
+	s.Equal(int64(1), res[0])
+	s.EqualValues(capacity-1, res[1], "should cap at capacity")
+}
+
+func (s *RedisStoreSuite) TestEval_TokenBucket_Atomicity() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	key := "rl:sink:atomic"
+	rawKey := fmt.Sprintf("%s:%s", prefix, key)
+	s.client.Del(ctx, rawKey)
+
+	capacity := 10
+	refillRate := 1
+	refillIntervalMs := 1000
+	nowMs := time.Now().UnixMilli()
+
+	goroutines := 50
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	allowedCount := int32(0)
+
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			res, err := s.redisStore.Eval(ctx, tokenBucketLua, []string{key}, capacity, refillRate, refillIntervalMs, nowMs)
+			if err == nil && res[0].(int64) == 1 {
+				atomic.AddInt32(&allowedCount, 1)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	s.Equal(int32(capacity), allowedCount, "exactly capacity calls should be allowed")
+}
+
+func (s *RedisStoreSuite) TestEval_Peek() {
+	ctx := context.Background()
+	prefix := fmt.Sprintf("inhooks:%s", s.appConf.Redis.InhooksDBName)
+	defer func() {
+		err := testsupport.DeleteAllRedisKeys(ctx, s.client, prefix)
+		s.NoError(err)
+	}()
+
+	rawKey := fmt.Sprintf("%s:%s", prefix, "rl:sink:peek")
+	s.client.Del(ctx, rawKey)
+
+	capacity := 5
+	refillRate := 1
+	refillIntervalMs := 1000
+	nowMs := time.Now().UnixMilli()
+
+	// Consume 2 tokens
+	for i := 0; i < 2; i++ {
+		_, err := s.redisStore.Eval(ctx, tokenBucketLua, []string{"rl:sink:peek"}, capacity, refillRate, refillIntervalMs, nowMs)
+		s.NoError(err)
+	}
+
+	// Peek should show 3 remaining
+	res, err := s.redisStore.Eval(ctx, peekLua, []string{"rl:sink:peek"}, capacity, refillRate, refillIntervalMs, nowMs)
+	s.NoError(err)
+	s.Len(res, 1)
+	s.EqualValues(3, res[0])
 }

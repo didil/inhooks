@@ -16,6 +16,7 @@ services=(
     "message_verifier"
     "message_transformer"
     "queue_metrics_service"
+    "ratelimit_service"
 )
 
 for service in ${services[@]}

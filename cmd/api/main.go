@@ -125,6 +125,8 @@ func main() {
 
 	queueMetricsSvc := services.NewQueueMetricsService(redisStore)
 
+	rateLimiter := services.NewTokenBucketLimiter(redisStore, timeSvc, logger)
+
 	svisor := supervisor.NewSupervisor(
 		supervisor.WithLogger(logger),
 		supervisor.WithMessageFetcher(messageFetcher),
@@ -137,6 +139,7 @@ func main() {
 		supervisor.WithCleanupService(cleanupSvc),
 		supervisor.WithMessageTransformer(messageTransformer),
 		supervisor.WithQueueMetricsService(queueMetricsSvc),
+		supervisor.WithRateLimiter(rateLimiter),
 	)
 
 	wg.Add(1)

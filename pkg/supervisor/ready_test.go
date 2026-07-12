@@ -214,3 +214,89 @@ func TestSupervisorHandleReadyQueue_Failed(t *testing.T) {
 
 	s.HandleReadyQueue(flow1, sink1)
 }
+
+func TestSupervisorHandleReadyQueue_RateLimited(t *testing.T) {
+	ctx := context.Background()
+
+	appConf, err := testsupport.InitAppConfig(ctx)
+	assert.NoError(t, err)
+
+	appConf.Supervisor.ErrSleepTime = 0
+	appConf.Supervisor.ReadyQueueConcurrency = 1
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	flowId1 := "flow-1"
+	sinkID1 := "sink-1"
+	transformID1 := "transform-1"
+
+	sink1 := &models.Sink{
+		ID: sinkID1,
+		Transform: &models.Transform{
+			ID: transformID1,
+		},
+		RateLimit: &models.RateLimitConfig{
+			Capacity:       10,
+			RefillRate:     5,
+			RefillInterval: time.Second,
+		},
+	}
+
+	flow1 := &models.Flow{
+		ID:    flowId1,
+		Sinks: []*models.Sink{sink1},
+	}
+
+	mID1 := "message-1"
+
+	m := &models.Message{
+		ID: mID1,
+	}
+
+	messageFetcher := mocks.NewMockMessageFetcher(ctrl)
+	processingResultsService := mocks.NewMockProcessingResultsService(ctrl)
+	inhooksConfigService := mocks.NewMockInhooksConfigService(ctrl)
+	rateLimiter := mocks.NewMockRateLimiter(ctrl)
+
+	logger, err := zap.NewDevelopment()
+	assert.NoError(t, err)
+
+	s := NewSupervisor(
+		WithMessageFetcher(messageFetcher),
+		WithProcessingResultsService(processingResultsService),
+		WithAppConfig(appConf),
+		WithInhooksConfigService(inhooksConfigService),
+		WithRateLimiter(rateLimiter),
+		WithLogger(logger),
+	)
+
+	fetcherCallCount := 0
+	messageFetcher.EXPECT().
+		GetMessageForProcessing(gomock.Any(), appConf.Supervisor.ReadyWaitTime, flowId1, sinkID1).AnyTimes().
+		DoAndReturn(func(ctx context.Context, timeout time.Duration, flowID string, sinkID string) (*models.Message, error) {
+			fetcherCallCount++
+			if fetcherCallCount == 1 {
+				return m, nil
+			}
+			return nil, nil
+		})
+
+	rlKey := fmt.Sprintf("rl:sink:%s:%s", flowId1, sinkID1)
+	rateLimiter.EXPECT().
+		Allow(gomock.Any(), rlKey, sink1.RateLimit).
+		Return(models.RateLimitDecision{
+			Allowed:    false,
+			Remaining:  0,
+			RetryAfter: 5 * time.Second,
+		})
+
+	processingResultsService.EXPECT().
+		RescheduleForRateLimit(gomock.Any(), sink1, m, 5*time.Second).
+		DoAndReturn(func(ctx context.Context, sink *models.Sink, m *models.Message, delay time.Duration) (*models.QueuedInfo, error) {
+			s.Shutdown()
+			return &models.QueuedInfo{QueueStatus: models.QueueStatusScheduled}, nil
+		})
+
+	s.HandleReadyQueue(flow1, sink1)
+}
