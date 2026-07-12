@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/didil/inhooks/compare/v0.1.13...v0.1.14) (2026-07-12)
+
+
+### Features
+
+* rate limiting ([#80](https://github.com/didil/inhooks/issues/80)) ([a4f4752](https://github.com/didil/inhooks/commit/a4f47521e7b2412632fde21ccb62d184a2802e62))
+
 ## [0.1.13](https://github.com/didil/inhooks/compare/v0.1.12...v0.1.13) (2026-07-10)
 
 
